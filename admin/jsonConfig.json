@@ -1,0 +1,449 @@
+{
+    "i18n": true,
+    "type": "tabs",
+    "items": {
+        "_albums": {
+            "type": "panel",
+            "label": "tab_albums",
+            "items": {
+                "_albumsHelp": {
+                    "type": "staticText",
+                    "text": "albums_help",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "albums": {
+                    "type": "table",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12,
+                    "uniqueColumns": ["id"],
+                    "items": [
+                        {
+                            "type": "checkbox",
+                            "attr": "enabled",
+                            "width": "6%",
+                            "title": "col_enabled",
+                            "default": true
+                        },
+                        {
+                            "type": "text",
+                            "attr": "id",
+                            "width": "14%",
+                            "title": "col_id",
+                            "tooltip": "col_id_tooltip",
+                            "default": ""
+                        },
+                        {
+                            "type": "text",
+                            "attr": "name",
+                            "width": "18%",
+                            "title": "col_name",
+                            "default": ""
+                        },
+                        {
+                            "type": "select",
+                            "attr": "type",
+                            "width": "16%",
+                            "title": "col_type",
+                            "default": "storage",
+                            "options": [
+                                {
+                                    "value": "storage",
+                                    "label": "type_storage"
+                                },
+                                {
+                                    "value": "path",
+                                    "label": "type_path"
+                                },
+                                {
+                                    "value": "immich",
+                                    "label": "type_immich"
+                                },
+                                {
+                                    "value": "google",
+                                    "label": "type_google"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "text",
+                            "attr": "location",
+                            "width": "36%",
+                            "title": "col_location",
+                            "tooltip": "col_location_tooltip",
+                            "default": ""
+                        },
+                        {
+                            "type": "checkbox",
+                            "attr": "recursive",
+                            "width": "10%",
+                            "title": "col_recursive",
+                            "default": true
+                        }
+                    ]
+                }
+            }
+        },
+        "_immich": {
+            "type": "panel",
+            "label": "tab_immich",
+            "items": {
+                "_immichHelp": {
+                    "type": "staticText",
+                    "text": "immich_help",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "dockerImmich.enabled": {
+                    "type": "checkDocker",
+                    "label": "immich_docker",
+                    "help": "immich_docker_help",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 8,
+                    "xl": 8
+                },
+                "immichUrl": {
+                    "type": "text",
+                    "label": "immichUrl",
+                    "help": "immichUrl_help",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4,
+                    "hidden": "!!data.dockerImmich?.enabled"
+                },
+                "immichApiKey": {
+                    "type": "password",
+                    "label": "immichApiKey",
+                    "help": "immichApiKey_help",
+                    "visible": true,
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4,
+                    "hidden": "!!data.dockerImmich?.enabled"
+                },
+                "_testImmich": {
+                    "type": "sendTo",
+                    "label": "immich_test",
+                    "command": "testImmich",
+                    "jsonData": "{\"url\": \"${data.immichUrl}\", \"apiKey\": \"${data.immichApiKey}\"}",
+                    "showProcess": true,
+                    "variant": "outlined",
+                    "disabled": "!data.immichUrl || !data.immichApiKey",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4,
+                    "hidden": "!!data.dockerImmich?.enabled"
+                },
+                "_dockerHeader": {
+                    "type": "header",
+                    "text": "immich_docker_header",
+                    "size": 4,
+                    "newLine": true,
+                    "hidden": "!data.dockerImmich?.enabled",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "_immichStatus": {
+                    "type": "state",
+                    "oid": "immich.status",
+                    "control": "html",
+                    "label": "immich_docker_status",
+                    "newLine": true,
+                    "hidden": "!data.dockerImmich?.enabled",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "dockerImmich.location": {
+                    "type": "diskSelector",
+                    "mode": "folder",
+                    "label": "immich_location",
+                    "help": "immich_location_help",
+                    "validator": "!data.dockerImmich?.enabled || (data.dockerImmich?.location || '').startsWith('/')",
+                    "validatorErrorText": "immich_location_error",
+                    "validatorNoSaveOnError": true,
+                    "newLine": true,
+                    "hidden": "!data.dockerImmich?.enabled",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 8,
+                    "xl": 8
+                },
+                "_locationCheck": {
+                    "type": "textSendTo",
+                    "command": "checkFolder",
+                    "jsonData": "{\"folder\": \"${data.dockerImmich.location}\"}",
+                    "alsoDependsOn": ["dockerImmich.location"],
+                    "container": "html",
+                    "newLine": true,
+                    "hidden": "!data.dockerImmich?.enabled",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 8,
+                    "xl": 8
+                },
+                "immichEmail": {
+                    "type": "text",
+                    "label": "immich_email",
+                    "help": "immich_email_help",
+                    "validator": "!data.dockerImmich?.enabled || !data.immichEmail || /^[^@\\s]+@[^@\\s]+$/.test(data.immichEmail)",
+                    "validatorErrorText": "immich_email_error",
+                    "newLine": true,
+                    "hidden": "!data.dockerImmich?.enabled",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "immichPassword": {
+                    "type": "password",
+                    "label": "immich_password",
+                    "help": "immich_password_help",
+                    "visible": true,
+                    "hidden": "!data.dockerImmich?.enabled",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "dockerImmich.bind": {
+                    "type": "ip",
+                    "label": "immich_bind",
+                    "help": "immich_bind_help",
+                    "listenOnAllPorts": true,
+                    "onlyIp4": true,
+                    "newLine": true,
+                    "hidden": "!data.dockerImmich?.enabled",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "dockerImmich.port": {
+                    "type": "port",
+                    "label": "immich_port",
+                    "default": 2283,
+                    "hidden": "!data.dockerImmich?.enabled",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "dockerImmich.machineLearning": {
+                    "type": "checkbox",
+                    "label": "immich_ml",
+                    "help": "immich_ml_help",
+                    "onChange": {
+                        "alsoDependsOn": ["dockerImmich.enabled"],
+                        "calculateFunc": "data.dockerImmich?.enabled ? !!data.dockerImmich?.machineLearning : false",
+                        "ignoreOwnChanges": true
+                    },
+                    "newLine": true,
+                    "hidden": "!data.dockerImmich?.enabled",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 8,
+                    "xl": 8
+                },
+                "dockerImmich.autoImageUpdate": {
+                    "type": "checkbox",
+                    "label": "immich_auto_update",
+                    "help": "immich_auto_update_help",
+                    "newLine": true,
+                    "hidden": "!data.dockerImmich?.enabled",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "dockerImmich.stopIfInstanceStopped": {
+                    "type": "checkbox",
+                    "label": "immich_stop",
+                    "help": "immich_stop_help",
+                    "hidden": "!data.dockerImmich?.enabled",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                }
+            }
+        },
+        "_google": {
+            "type": "panel",
+            "label": "tab_google",
+            "items": {
+                "_googleHelp": {
+                    "type": "staticText",
+                    "text": "google_help",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "_googleStatus": {
+                    "type": "state",
+                    "oid": "google.status",
+                    "control": "html",
+                    "label": "google_status_label",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 8,
+                    "lg": 6,
+                    "xl": 6
+                },
+                "_googleQr": {
+                    "type": "qrCode",
+                    "label": "google_qr",
+                    "data": "https://www.google.com/device",
+                    "size": 128,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 4,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "_googleConnect": {
+                    "type": "sendTo",
+                    "label": "google_connect",
+                    "command": "googleConnect",
+                    "showProcess": true,
+                    "variant": "contained",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 4,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "_googleChoose": {
+                    "type": "sendTo",
+                    "label": "google_choose",
+                    "command": "googleSettings",
+                    "openUrl": true,
+                    "window": "_blank",
+                    "variant": "outlined",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 4,
+                    "lg": 3,
+                    "xl": 3
+                },
+                "_googleDisconnect": {
+                    "type": "sendTo",
+                    "label": "google_disconnect",
+                    "command": "googleDisconnect",
+                    "variant": "outlined",
+                    "showProcess": true,
+                    "confirm": {
+                        "text": "google_disconnect_confirm",
+                        "title": "google_disconnect",
+                        "ok": "google_disconnect",
+                        "cancel": "google_cancel"
+                    },
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 4,
+                    "lg": 3,
+                    "xl": 3
+                }
+            }
+        },
+        "_pictures": {
+            "type": "panel",
+            "label": "tab_pictures",
+            "items": {
+                "maxEdge": {
+                    "type": "select",
+                    "label": "maxEdge",
+                    "help": "maxEdge_help",
+                    "options": [
+                        {
+                            "value": 1280,
+                            "label": "edge_1280"
+                        },
+                        {
+                            "value": 1920,
+                            "label": "edge_1920"
+                        },
+                        {
+                            "value": 2560,
+                            "label": "edge_2560"
+                        },
+                        {
+                            "value": 3840,
+                            "label": "edge_3840"
+                        }
+                    ],
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "cacheSizeMb": {
+                    "type": "number",
+                    "label": "cacheSizeMb",
+                    "help": "cacheSizeMb_help",
+                    "min": 20,
+                    "max": 100000,
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
+                "rescanMinutes": {
+                    "type": "number",
+                    "label": "rescanMinutes",
+                    "help": "rescanMinutes_help",
+                    "min": 5,
+                    "max": 10080,
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "CommonJS",
+        "moduleResolution": "Bundler",
+        "lib": ["ES2023"],
+        "types": ["node", "@iobroker/types"],
+        "outDir": "build",
+        "rootDir": ".",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "sourceMap": true,
+        "noEmit": false,
+        "declaration": false,
+        "resolveJsonModule": false
+    },
+    "include": ["src/**/*.ts", "src-widgets/src/lib/imageMeta.ts"],
+    "exclude": ["src/**/*.test.ts"]
+}

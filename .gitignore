@@ -1,0 +1,10 @@
+/node_modules
+/src-widgets/build
+/src-widgets/node_modules
+/.idea
+/widgets
+/tmp
+*.tgz
+tmp_*.log
+.commitinfo
+/build

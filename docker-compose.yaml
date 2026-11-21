@@ -1,0 +1,105 @@
+version: '3.9'
+
+# Immich (https://immich.app) in Docker, run by @iobroker/plugin-docker for this instance. Optional: nothing runs
+# unless "Run Immich in Docker" is checked in the settings (dockerImmich.enabled).
+#
+# Built after the docker-compose.yml of Immich v3.4.2. The plugin prefixes every container, volume and network with
+# `iob_screensaver_<instance>_`, so the server finds the others by the hostnames given in its environment, not by
+# the service names of the original file.
+#
+# The environment of the server is written as a list on purpose: a value that is a single `${config…}` pattern
+# becomes a boolean, and the plugin then sees "true" of the running container differ from `true` and recreates it
+# on every check.
+#
+# Images by tag only, unlike the original file: the plugin looks a pulled image up as `repository:tag` in the list
+# of Docker, which has neither a digest (`…@sha256:…`) nor the prefix `docker.io/` - such an image is "not found
+# after pull" and its container never starts.
+
+services:
+    database:
+        container_name: database
+        image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
+        labels:
+            - 'iobEnabled=${config.dockerImmich.enabled:-false}'
+            - 'iobStopOnUnload=${config.dockerImmich.stopIfInstanceStopped:-false}'
+            - 'iobWaitForReady=true'
+            # No iobBackup: a copy of the files of a running database is no backup. Immich writes a dump of it
+            # every night into the folder of the photos (backups/), which is where a backup has to look anyway.
+        environment:
+            # The port of the database is not published: only the containers of this instance reach it. The
+            # password cannot be changed later anyway - postgres keeps the one it was created with.
+            POSTGRES_PASSWORD: 'immich_iobroker'
+            POSTGRES_USER: 'postgres'
+            POSTGRES_DB: 'immich'
+            POSTGRES_INITDB_ARGS: '--data-checksums'
+        volumes:
+            # on the local disk of the Docker host: Immich does not support the database on a network share
+            - database:/var/lib/postgresql/data
+        shm_size: 128m
+        networks:
+            - true
+        restart: unless-stopped
+
+    redis:
+        container_name: redis
+        image: valkey/valkey:9
+        labels:
+            - 'iobEnabled=${config.dockerImmich.enabled:-false}'
+            - 'iobStopOnUnload=${config.dockerImmich.stopIfInstanceStopped:-false}'
+            - 'iobWaitForReady=true'
+        networks:
+            - true
+        restart: unless-stopped
+
+    immich-ml:
+        container_name: immich-ml
+        image: ghcr.io/immich-app/immich-machine-learning:v3
+        labels:
+            # unchecked together with dockerImmich.enabled by the settings dialog (onChange of the checkbox)
+            - 'iobEnabled=${config.dockerImmich.machineLearning:-false}'
+            - 'iobStopOnUnload=${config.dockerImmich.stopIfInstanceStopped:-false}'
+            - 'iobAutoImageUpdate=${config.dockerImmich.autoImageUpdate:-true}'
+            - 'iobWaitForReady=true'
+        environment:
+            - 'MACHINE_LEARNING_MODEL_REVISION=v2'
+        volumes:
+            - model-cache:/cache
+        networks:
+            - true
+        restart: unless-stopped
+
+    immich-server:
+        container_name: immich-server
+        # the major version is fixed: a new major version of Immich may need another database image
+        image: ghcr.io/immich-app/immich-server:v3
+        labels:
+            - 'iobEnabled=${config.dockerImmich.enabled:-false}'
+            - 'iobStopOnUnload=${config.dockerImmich.stopIfInstanceStopped:-false}'
+            - 'iobAutoImageUpdate=${config.dockerImmich.autoImageUpdate:-true}'
+            # the adapter creates the folder of the photos first
+            - 'iobWaitForReady=true'
+        ports:
+            - '${config.dockerImmich.bind:-0.0.0.0}:${config_dockerImmich_port:-2283}:2283'
+        environment:
+            - 'DB_HOSTNAME=iob_screensaver_${instance}_database'
+            - 'DB_USERNAME=postgres'
+            - 'DB_PASSWORD=immich_iobroker'
+            - 'DB_DATABASE_NAME=immich'
+            - 'REDIS_HOSTNAME=iob_screensaver_${instance}_redis'
+            - 'IMMICH_MACHINE_LEARNING_ENABLED=${config.dockerImmich.machineLearning:-false}'
+            - 'IMMICH_MACHINE_LEARNING_URL=http://iob_screensaver_${instance}_immich-ml:3003'
+        volumes:
+            # the folder chosen in the settings: the photos, their thumbnails and the nightly dumps of the database
+            - '${config.dockerImmich.location}:/data'
+            - '/etc/localtime:/etc/localtime:ro'
+        networks:
+            - true
+        restart: unless-stopped
+
+networks:
+    true:
+        driver: bridge
+
+volumes:
+    database:
+    model-cache:

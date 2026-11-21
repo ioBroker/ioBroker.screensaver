@@ -1,0 +1,260 @@
+{
+  "common": {
+    "name": "screensaver",
+    "version": "0.0.1",
+    "news": {
+      "0.0.1": {
+        "en": "First version: photo frame widget and screensaver for vis-2",
+        "de": "Erste Version: Bilderrahmen-Widget und Bildschirmschoner für vis-2",
+        "ru": "Первая версия: виджет фоторамки и заставка для vis-2",
+        "pt": "Primeira versão: widget de moldura de fotos e protetor de tela para vis-2",
+        "nl": "Eerste versie: fotolijst-widget en schermbeveiliging voor vis-2",
+        "fr": "Première version : widget cadre photo et économiseur d'écran pour vis-2",
+        "it": "Prima versione: widget cornice foto e salvaschermo per vis-2",
+        "es": "Primera versión: widget de marco de fotos y salvapantallas para vis-2",
+        "pl": "Pierwsza wersja: widżet ramki na zdjęcia i wygaszacz ekranu dla vis-2",
+        "uk": "Перша версія: віджет фоторамки та заставка для vis-2",
+        "zh-cn": "第一个版本：vis-2 的相框小部件和屏幕保护程序"
+      }
+    },
+    "licenseInformation": {
+      "license": "MIT",
+      "type": "free"
+    },
+    "titleLang": {
+      "en": "Photo frame & screensaver",
+      "de": "Bilderrahmen & Bildschirmschoner",
+      "ru": "Фоторамка и заставка",
+      "pt": "Moldura de fotos e protetor de tela",
+      "nl": "Fotolijst & schermbeveiliging",
+      "fr": "Cadre photo et économiseur d'écran",
+      "it": "Cornice foto e salvaschermo",
+      "es": "Marco de fotos y salvapantallas",
+      "pl": "Ramka na zdjęcia i wygaszacz ekranu",
+      "uk": "Фоторамка та заставка",
+      "zh-cn": "相框和屏幕保护程序"
+    },
+    "desc": {
+      "en": "Digital photo frame and screensaver for vis-2, devices and other hosts; albums from folders and Immich, filtered by date",
+      "de": "Digitaler Bilderrahmen und Bildschirmschoner für vis-2, devices und andere Hosts; Alben aus Ordnern und Immich, nach Datum gefiltert",
+      "ru": "Цифровая фоторамка и заставка для vis-2, devices и других хостов; альбомы из папок и Immich с фильтром по дате",
+      "pt": "Moldura digital e protetor de tela para vis-2, devices e outros hosts; álbuns de pastas e do Immich, filtrados por data",
+      "nl": "Digitale fotolijst en schermbeveiliging voor vis-2, devices en andere hosts; albums uit mappen en Immich, gefilterd op datum",
+      "fr": "Cadre photo numérique et économiseur d'écran pour vis-2, devices et d'autres hôtes ; albums de dossiers et d'Immich, filtrés par date",
+      "it": "Cornice digitale e salvaschermo per vis-2, devices e altri host; album da cartelle e Immich, filtrati per data",
+      "es": "Marco de fotos digital y salvapantallas para vis-2, devices y otros hosts; álbumes de carpetas e Immich, filtrados por fecha",
+      "pl": "Cyfrowa ramka na zdjęcia i wygaszacz ekranu dla vis-2, devices i innych hostów; albumy z folderów i Immich, filtrowane według daty",
+      "uk": "Цифрова фоторамка та заставка для vis-2, devices та інших хостів; альбоми з папок та Immich з фільтром за датою",
+      "zh-cn": "适用于 vis-2、devices 和其他宿主的数码相框和屏幕保护程序；来自文件夹和 Immich 的相册，可按日期筛选"
+    },
+    "authors": [
+      "bluefox <dogafox@gmail.com>"
+    ],
+    "keywords": [
+      "screensaver",
+      "photo frame",
+      "slideshow",
+      "immich",
+      "vis-2",
+      "web components"
+    ],
+    "platform": "Javascript/Node.js",
+    "icon": "screensaver.svg",
+    "extIcon": "https://raw.githubusercontent.com/ioBroker/ioBroker.screensaver/main/admin/screensaver.svg",
+    "enabled": true,
+    "readme": "https://github.com/ioBroker/ioBroker.screensaver/blob/main/README.md",
+    "loglevel": "info",
+    "mode": "daemon",
+    "adminUI": {
+      "config": "json"
+    },
+    "type": "visualization-widgets",
+    "connectionType": "local",
+    "dataSource": "poll",
+    "nogit": true,
+    "messagebox": true,
+    "singleton": true,
+    "visWidgets": {
+      "vis2screensaverWidgets": {
+        "i18n": "component",
+        "name": "vis2screensaverWidgets",
+        "url": "screensaver/customWidgets.js",
+        "bundlerType": "module",
+        "components": [
+          "PhotoFrame",
+          "Screensaver"
+        ],
+        "services": [
+          "ScreensaverService"
+        ]
+      }
+    },
+    "webComponents": [
+      {
+        "manifest": "webcomponents/iob-screensaver-photo-frame.json",
+        "tag": "iob-screensaver-photo-frame",
+        "name": {
+          "en": "Photo frame",
+          "de": "Bilderrahmen",
+          "ru": "Фоторамка",
+          "pt": "Porta-retratos",
+          "nl": "Fotolijst",
+          "fr": "Cadre photo",
+          "it": "Cornice foto",
+          "es": "Marco de fotos",
+          "pl": "Ramka na zdjęcia",
+          "uk": "Фоторамка",
+          "zh-cn": "数码相框"
+        },
+        "icon": "iob-screensaver-photo-frame.svg",
+        "size": {
+          "width": 320,
+          "height": 200
+        }
+      },
+      {
+        "manifest": "webcomponents/iob-screensaver.json",
+        "tag": "iob-screensaver",
+        "name": {
+          "en": "Screensaver",
+          "de": "Bildschirmschoner",
+          "ru": "Заставка",
+          "pt": "Protetor de tela",
+          "nl": "Screensaver",
+          "fr": "Économiseur d'écran",
+          "it": "Salvaschermo",
+          "es": "Salvapantallas",
+          "pl": "Wygaszacz ekranu",
+          "uk": "Заставка",
+          "zh-cn": "屏幕保护"
+        },
+        "icon": "iob-screensaver.svg",
+        "size": {
+          "width": 160,
+          "height": 160
+        }
+      }
+    ],
+    "dependencies": [
+      {
+        "js-controller": ">=6.0.11"
+      }
+    ],
+    "globalDependencies": [
+      {
+        "admin": ">=7.6.17"
+      }
+    ],
+    "restartAdapters": [
+      "vis-2"
+    ],
+    "tier": 3,
+    "plugins": {
+      "docker": {
+        "iobDockerComposeFiles": [
+          "docker-compose.yaml"
+        ]
+      }
+    },
+    "stopTimeout": 15000
+  },
+  "native": {
+    "albums": [],
+    "immichUrl": "",
+    "immichApiKey": "",
+    "dockerImmich": {
+      "enabled": false,
+      "bind": "0.0.0.0",
+      "port": 2283,
+      "location": "",
+      "machineLearning": false,
+      "autoImageUpdate": true,
+      "stopIfInstanceStopped": false
+    },
+    "immichEmail": "",
+    "immichPassword": "",
+    "maxEdge": 2560,
+    "cacheSizeMb": 500,
+    "rescanMinutes": 60
+  },
+  "objects": [],
+  "instanceObjects": [
+    {
+      "_id": "",
+      "type": "meta",
+      "common": {
+        "name": {
+          "en": "Reduced pictures of the albums",
+          "de": "Verkleinerte Bilder der Alben"
+        },
+        "type": "meta.user"
+      },
+      "native": {}
+    },
+    {
+      "_id": "info",
+      "type": "channel",
+      "common": {
+        "name": "Information"
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.pictures",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Pictures in all albums",
+          "de": "Bilder in allen Alben"
+        },
+        "type": "number",
+        "role": "value",
+        "read": true,
+        "write": false,
+        "def": 0
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.cacheMb",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Size of the cache",
+          "de": "Größe des Zwischenspeichers"
+        },
+        "type": "number",
+        "role": "value",
+        "unit": "MB",
+        "read": true,
+        "write": false,
+        "def": 0
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.scanning",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Albums are being read",
+          "de": "Alben werden gelesen"
+        },
+        "type": "boolean",
+        "role": "indicator.working",
+        "read": true,
+        "write": false,
+        "def": false
+      },
+      "native": {}
+    }
+  ],
+  "encryptedNative": [
+    "immichApiKey",
+    "immichPassword"
+  ],
+  "protectedNative": [
+    "immichApiKey",
+    "immichPassword"
+  ]
+}
