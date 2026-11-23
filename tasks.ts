@@ -6,7 +6,7 @@
  */
 import { deleteFoldersRecursive, npmInstall, buildReact, copyFiles } from '@iobroker/build-tools';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, rmSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 
 const { name } = JSON.parse(readFileSync(`${__dirname}/package.json`, 'utf8')) as { name: string };
 
@@ -32,9 +32,28 @@ function buildBackend(): void {
     });
 }
 
+/**
+ * Give the lock of the widgets the version of their package.json. `buildReact` writes the adapter's version into
+ * src-widgets/package.json only after `npm install` ran, so without this the lock stays one release behind.
+ */
+function syncWidgetsLock(): void {
+    const { version } = JSON.parse(readFileSync(`${src}package.json`, 'utf8')) as { version: string };
+    const file = `${src}package-lock.json`;
+    const lock = JSON.parse(readFileSync(file, 'utf8')) as {
+        version: string;
+        packages: Record<string, { version?: string }>;
+    };
+    if (lock.version !== version || lock.packages['']?.version !== version) {
+        lock.version = version;
+        lock.packages[''].version = version;
+        writeFileSync(file, `${JSON.stringify(lock, null, 4)}\n`);
+    }
+}
+
 /** Run the Vite build of the widget sources */
-function compile(): Promise<void> {
-    return buildReact(src, { rootDir: __dirname, vite: true });
+async function compile(): Promise<void> {
+    await buildReact(src, { rootDir: __dirname, vite: true });
+    syncWidgetsLock();
 }
 
 /** Copy the Vite output into `widgets/<adapter>/`, which is what vis-2 loads at runtime */
