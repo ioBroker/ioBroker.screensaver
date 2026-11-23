@@ -44,6 +44,9 @@ The web components take React from the host: web or admin must serve the shared 
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+* (@GermanBluefox) Releases are published to npm directly from GitHub (trusted publishing)
+
 ### 0.1.0 (2026-11-23)
 * (@GermanBluefox) First version: photo frame widget and screensaver
 * (@GermanBluefox) Photo frame and screensaver as web components too, for devices, Aura and other hosts
