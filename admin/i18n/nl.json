@@ -33,14 +33,18 @@
     "tab_google": "Google Foto's",
     "type_google": "Google Foto's",
     "google_help": "Toont foto's uit je Google Foto's-bibliotheek. ioBroker wordt een apparaat in Google Foto's, zoals een fotolijst: in de Google Foto's-app kies je welke albums, personen of huisdieren het toont. Schermafbeeldingen, documenten en zeer persoonlijke foto's laat Google zelf weg. Voeg daarna op het eerste tabblad een album met de bron Google Foto's toe: in het mapveld de naam van een in de app gekozen bron, of niets voor de selectie van Google.",
+    "google_permissions": "Bij het verbinden vraagt Google of ioBroker twee dingen mag: je naam en profielfoto zien, zodat deze pagina laat zien welk Google-account verbonden is, en de foto's zien die je in de Google Foto's-app voor dit apparaat kiest. De rest van je Google Foto's-bibliotheek ziet ioBroker niet, en het kan daar niets wijzigen of verwijderen. Kopieën van de foto's blijven hoogstens 60 minuten. \"Ontkoppelen\" verwijdert het apparaat uit Google Foto's, trekt de toestemming in en verwijdert de kopieën.",
+    "google_device_name": "Naam in Google Foto's",
+    "google_device_name_help": "De naam van dit apparaat in de Google Foto's-app, waar je kiest wat het toont. Leeg: ioBroker en de naam van de host. Geldt bij het verbinden.",
     "google_status_label": "Status",
     "google_qr": "Scan met de telefoon",
     "google_connect": "Verbinden met Google Foto's",
     "google_choose": "Kiezen wat getoond wordt",
     "google_disconnect": "Verbinding verbreken",
-    "google_disconnect_confirm": "ioBroker uit Google Foto's verwijderen? De albums uit Google Foto's blijven leeg tot je opnieuw verbindt.",
+    "google_disconnect_confirm": "ioBroker uit Google Foto's verwijderen? De toestemming wordt ingetrokken en de kopieën van de foto's worden verwijderd. De albums uit Google Foto's blijven leeg tot je opnieuw verbindt.",
     "google_cancel": "Annuleren",
     "google_status_disconnected": "Niet verbonden.",
+    "google_status_account": "Google-account: %s",
     "google_status_code": "Open %s op een telefoon of computer (of scan de QR-code) en voer deze code in:",
     "google_status_code_until": "De code is geldig tot %s.",
     "google_status_sources": "Verbonden. Kies nu in Google Foto's wat ioBroker toont:",
@@ -92,5 +96,6 @@
     "immich_status_error": "Fout: %s",
     "immich_status_open": "Immich openen",
     "immich_status_app": "Serveradres voor de Immich-app: %s",
-    "immich_status_local_only": "Immich luistert alleen op deze host: de app op de telefoon bereikt het niet. Kies 0.0.0.0 of een IP van de host."
+    "immich_status_local_only": "Immich luistert alleen op deze host: de app op de telefoon bereikt het niet. Kies 0.0.0.0 of een IP van de host.",
+    "weather_source_none": "Geen"
 }

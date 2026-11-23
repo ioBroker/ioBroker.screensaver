@@ -33,14 +33,18 @@
     "tab_google": "Google Foto",
     "type_google": "Google Foto",
     "google_help": "Mostra le foto della tua libreria di Google Foto. ioBroker diventa un dispositivo in Google Foto, come una cornice: nell'app Google Foto scegli quali album, persone o animali mostra. Screenshot, documenti e foto molto personali vengono esclusi da Google stesso. Poi aggiungi nella prima scheda un album con la fonte Google Foto: nel campo della cartella il nome di una fonte scelta nell'app, o niente per la selezione di Google.",
+    "google_permissions": "Durante la connessione Google chiede di consentire a ioBroker due cose: vedere il tuo nome e la tua foto del profilo, così che questa pagina mostri quale Account Google è collegato, e vedere le foto che scegli per questo dispositivo nell'app Google Foto. ioBroker non vede il resto della tua raccolta di Google Foto e non può modificare né eliminare nulla. Le copie delle foto restano al massimo 60 minuti. \"Disconnetti\" rimuove il dispositivo da Google Foto, revoca l'autorizzazione ed elimina le copie.",
+    "google_device_name": "Nome in Google Foto",
+    "google_device_name_help": "Il nome di questo dispositivo nell'app Google Foto, dove scegli cosa mostra. Vuoto: ioBroker e il nome dell'host. Usato durante la connessione.",
     "google_status_label": "Stato",
     "google_qr": "Scansiona con il telefono",
     "google_connect": "Collega Google Foto",
     "google_choose": "Scegli cosa mostrare",
     "google_disconnect": "Scollega",
-    "google_disconnect_confirm": "Rimuovere ioBroker da Google Foto? Gli album di Google Foto restano vuoti finché non ti colleghi di nuovo.",
+    "google_disconnect_confirm": "Rimuovere ioBroker da Google Foto? L'autorizzazione viene revocata e le copie delle foto vengono eliminate. Gli album di Google Foto restano vuoti finché non ti colleghi di nuovo.",
     "google_cancel": "Annulla",
     "google_status_disconnected": "Non collegato.",
+    "google_status_account": "Account Google: %s",
     "google_status_code": "Apri %s sul telefono o sul computer (o scansiona il codice QR) e inserisci questo codice:",
     "google_status_code_until": "Il codice è valido fino alle %s.",
     "google_status_sources": "Collegato. Ora scegli in Google Foto cosa mostra ioBroker:",
@@ -92,5 +96,6 @@
     "immich_status_error": "Errore: %s",
     "immich_status_open": "Apri Immich",
     "immich_status_app": "Indirizzo del server per l'app Immich: %s",
-    "immich_status_local_only": "Immich è in ascolto solo su questo host: l'app sul telefono non lo raggiunge. Scegli 0.0.0.0 o un IP dell'host."
+    "immich_status_local_only": "Immich è in ascolto solo su questo host: l'app sul telefono non lo raggiunge. Scegli 0.0.0.0 o un IP dell'host.",
+    "weather_source_none": "Nessuna"
 }

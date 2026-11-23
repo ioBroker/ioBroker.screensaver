@@ -175,7 +175,8 @@
     "immichPassword": "",
     "maxEdge": 2560,
     "cacheSizeMb": 500,
-    "rescanMinutes": 60
+    "rescanMinutes": 60,
+    "googleDeviceName": ""
   },
   "objects": [],
   "instanceObjects": [

@@ -9,6 +9,10 @@
  * - `rescan` `{ album? }` → read the albums again
  * - `testImmich` `{ url, apiKey }` → `{ result }` or `{ error }`, the button of the settings
  * - `googleConnect`, `googleSettings`, `googleDisconnect` → the buttons of Google Photos in the settings
+ * - `checkFolder` `{ folder }` → the check of the folder of Immich in Docker below its field in the settings
+ * - `weatherSources` → `[{ value, label }]`, the channels of the weather adapters for the settings of the web components
+ *
+ * With Immich the quick access of admin gets a card that opens it (`common.localLinks`, `immichLink.ts`).
  *
  * Immich can run in Docker on this host (`docker-compose.yaml`, started by `@iobroker/plugin-docker`): the adapter
  * then creates the folder of the photos, lets the plugin start the containers and connects itself (`immichDocker.ts`).
@@ -17,11 +21,12 @@
 import * as utils from '@iobroker/adapter-core';
 import { existsSync, readFileSync, promises as fs } from 'node:fs';
 import { join } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 
 import type { IndexStore } from './lib/albumIndex';
 import { Albums } from './lib/albums';
 import { GoogleConnection, statusHtml, type GoogleAccount, type GoogleStatus } from './lib/googleConnection';
-import { OAuthProxy } from './lib/googlePhotos';
+import { GOOGLE_MEDIA_MAX_AGE_MS, OAuthProxy } from './lib/googlePhotos';
 import { ImmichClient } from './lib/immich';
 import {
     appAddresses,
@@ -34,10 +39,12 @@ import {
     type ImmichDockerStatus,
     type ImmichKey,
 } from './lib/immichDocker';
+import { IMMICH_LINK_KEY, immichLink, withImmichLink } from './lib/immichLink';
 import { checkFolder, folderCheckAnswer } from './lib/photoFolder';
 import { PictureCache, type CacheStorage, type SharpFactory } from './lib/pictureCache';
 import { parseStorageLocation, type FileStorage } from './lib/sources';
 import type { Picture, ScreensaverAdapterConfig } from './lib/types';
+import { listWeatherSources, type ObjectMap } from '../src-widgets/src/lib/weatherSource';
 
 declare global {
     // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -48,6 +55,9 @@ declare global {
 }
 
 const MB = 1024 * 1024;
+
+/** Copies older than their album allows (Google Photos: 60 minutes) are looked for this often */
+const EXPIRE_EVERY_MS = 5 * 60_000;
 
 /** New files arrive in bursts when a whole folder is uploaded */
 const FILE_CHANGE_DEBOUNCE_MS = 5000;
@@ -168,7 +178,45 @@ class ScreensaverAdapter extends utils.Adapter {
                 await fs.writeFile(`${file}.tmp`, JSON.stringify({ version: INDEX_VERSION, pictures }));
                 await fs.rename(`${file}.tmp`, file);
             },
+            remove: async albumId => {
+                await fs.rm(join(dir, `${albumId}.json`), { force: true });
+            },
         };
+    }
+
+    /**
+     * The card of Immich in the quick access of admin: there while Immich is set up. js-controller restarts the
+     * instance when its object changes, so it is written only when the card changes.
+     *
+     * @param config - the settings of the instance
+     */
+    private async updateImmichLink(config: ScreensaverAdapterConfig): Promise<void> {
+        const id = `system.adapter.${this.namespace}`;
+        try {
+            const obj = await this.getForeignObjectAsync(id);
+            if (!obj?.common) {
+                return;
+            }
+            const common = obj.common as ioBroker.InstanceCommon;
+            const link = immichLink(readDockerSettings(config.dockerImmich), config.immichUrl);
+            const links = withImmichLink(common.localLinks, link);
+            if (isDeepStrictEqual(links, common.localLinks)) {
+                return;
+            }
+            if (links) {
+                common.localLinks = links;
+            } else {
+                delete common.localLinks;
+            }
+            this.log.info(
+                links?.[IMMICH_LINK_KEY]
+                    ? `The quick access of admin gets a card for Immich (${link}); the instance restarts once`
+                    : 'The card for Immich leaves the quick access of admin; the instance restarts once',
+            );
+            await this.setForeignObjectAsync(id, obj);
+        } catch (e) {
+            this.log.warn(`Cannot update the card for Immich in admin: ${errorText(e)}`);
+        }
     }
 
     private async onReady(): Promise<void> {
@@ -179,6 +227,7 @@ class ScreensaverAdapter extends utils.Adapter {
         }
 
         await this.loadWords();
+        await this.updateImmichLink(config);
 
         let immich: ImmichClient | (() => ImmichClient) | null = null;
         const immichDocker = await this.startImmichDocker(readDockerSettings(config.dockerImmich));
@@ -217,6 +266,12 @@ class ScreensaverAdapter extends utils.Adapter {
             this.log.warn(problem);
         }
         await this.cache.forgetOthers(this.albums.ids);
+        // Google Photos allows its media to be cached for 60 minutes only
+        for (const index of this.albums.all()) {
+            this.cache.setMaxAge(index.config.id, index.config.type === 'google' ? GOOGLE_MEDIA_MAX_AGE_MS : null);
+        }
+        await this.cache.expire();
+        this.setInterval(() => void this.cache?.expire(), EXPIRE_EVERY_MS);
         if (!this.albums.ids.length) {
             this.log.info('No album is configured yet: add one in the settings of the instance');
         }
@@ -455,7 +510,8 @@ class ScreensaverAdapter extends utils.Adapter {
 
         return new GoogleConnection({
             oauth: new OAuthProxy(),
-            displayName: `ioBroker ${this.host || ''}`.trim(),
+            // the name the user finds the device under in the Google Photos app
+            displayName: this.config.googleDeviceName?.trim() || `ioBroker ${this.host || ''}`.trim(),
             loadAccount: () => this.loadGoogleAccount(),
             saveAccount: account => this.saveGoogleAccount(account),
             onStatus: status => void this.showGoogleStatus(status),
@@ -494,6 +550,15 @@ class ScreensaverAdapter extends utils.Adapter {
         await this.setStateChangedAsync(`${GOOGLE_OBJECT}.status`, statusHtml(status, this.word, time), true);
         if (status.state === 'connected' && was !== 'connected') {
             this.scanGoogle();
+        }
+        if (status.state === 'disconnected' || status.state === 'expired' || status.state === 'gone') {
+            // the access is withdrawn: nothing of Google Photos stays, neither the copies nor the list of the media
+            for (const index of this.albums?.all() || []) {
+                if (index.config.type === 'google') {
+                    await this.cache?.forgetAlbum(index.config.id);
+                    await index.forget();
+                }
+            }
         }
     }
 
@@ -570,6 +635,17 @@ class ScreensaverAdapter extends utils.Adapter {
         switch (obj.command) {
             case 'getAlbums':
                 return albums ? albums.selectOptions() : [];
+            case 'weatherSources': {
+                // the same rules as the select of the vis-2 editor, which reads the objects itself
+                const sources = await listWeatherSources(async (type, start, end) => {
+                    const view = await this.getObjectViewAsync('system', type as 'state', {
+                        startkey: start,
+                        endkey: end,
+                    });
+                    return Object.fromEntries(view.rows.map(row => [row.id, row.value as ObjectMap[string]]));
+                });
+                return [{ value: '', label: this.word('weather_source_none') }, ...sources];
+            }
             case 'list':
                 return albums ? albums.list(obj.message) : { error: 'album_not_found' };
             case 'picture': {

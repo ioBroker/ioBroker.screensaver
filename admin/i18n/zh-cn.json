@@ -33,14 +33,18 @@
     "tab_google": "Google 相册",
     "type_google": "Google 相册",
     "google_help": "显示您 Google 相册图库中的照片。ioBroker 会成为 Google 相册中的一台设备，就像一个相框：您在 Google 相册应用中选择它显示哪些相册、人物或宠物。Google 会自动排除屏幕截图、文档和非常私人的照片。然后在第一个标签页中添加一个来源为 Google 相册的相册：在文件夹字段中填写在应用中选择的来源名称，留空则使用 Google 的精选。",
+    "google_permissions": "连接时，Google 会请您允许 ioBroker 做两件事：查看您的姓名和个人资料照片，以便此页面显示连接的是哪个 Google 帐号；以及查看您在 Google 相册应用中为此设备选择的照片。ioBroker 看不到您 Google 相册媒体库的其余内容，也无法在其中更改或删除任何内容。照片副本最多保留 60 分钟。“断开连接”会从 Google 相册中移除该设备、撤销权限并删除副本。",
+    "google_device_name": "在 Google 相册中的名称",
+    "google_device_name_help": "此设备在 Google 相册应用中的名称，您在那里选择它显示的内容。留空：ioBroker 加主机名。连接时使用。",
     "google_status_label": "状态",
     "google_qr": "用手机扫描",
     "google_connect": "连接 Google 相册",
     "google_choose": "选择显示内容",
     "google_disconnect": "断开连接",
-    "google_disconnect_confirm": "要从 Google 相册中移除 ioBroker 吗？在重新连接之前，来自 Google 相册的相册将保持为空。",
+    "google_disconnect_confirm": "要从 Google 相册中移除 ioBroker 吗？权限将被撤销，照片副本将被删除。在您再次连接之前，Google 相册的相册将保持为空。",
     "google_cancel": "取消",
     "google_status_disconnected": "未连接。",
+    "google_status_account": "Google 帐号：%s",
     "google_status_code": "在手机或电脑上打开 %s（或扫描二维码）并输入此代码：",
     "google_status_code_until": "此代码有效期至 %s。",
     "google_status_sources": "已连接。现在在 Google 相册中选择 ioBroker 显示的内容：",
@@ -92,5 +96,6 @@
     "immich_status_error": "错误：%s",
     "immich_status_open": "打开 Immich",
     "immich_status_app": "Immich 应用的服务器地址：%s",
-    "immich_status_local_only": "Immich 只在本主机上监听：手机应用无法访问。请选择 0.0.0.0 或主机的某个 IP。"
+    "immich_status_local_only": "Immich 只在本主机上监听：手机应用无法访问。请选择 0.0.0.0 或主机的某个 IP。",
+    "weather_source_none": "无"
 }

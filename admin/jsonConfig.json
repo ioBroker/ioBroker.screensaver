@@ -316,28 +316,41 @@
                     "lg": 12,
                     "xl": 12
                 },
+                "googleDeviceName": {
+                    "type": "text",
+                    "label": "google_device_name",
+                    "help": "google_device_name_help",
+                    "placeholder": "ioBroker",
+                    "maxLength": 100,
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                    "xl": 4
+                },
                 "_googleStatus": {
                     "type": "state",
                     "oid": "google.status",
                     "control": "html",
                     "label": "google_status_label",
+                    "narrow": true,
                     "newLine": true,
                     "xs": 12,
                     "sm": 12,
-                    "md": 8,
-                    "lg": 6,
-                    "xl": 6
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
                 },
-                "_googleQr": {
-                    "type": "qrCode",
-                    "label": "google_qr",
-                    "data": "https://www.google.com/device",
-                    "size": 128,
+                "_googlePermissions": {
+                    "type": "staticText",
+                    "text": "google_permissions",
+                    "newLine": true,
                     "xs": 12,
                     "sm": 12,
-                    "md": 4,
-                    "lg": 3,
-                    "xl": 3
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
                 },
                 "_googleConnect": {
                     "type": "sendTo",

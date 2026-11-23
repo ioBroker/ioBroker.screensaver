@@ -41,7 +41,14 @@ function item(id: string, createTime: string, mimeType = 'image/jpeg'): AmbientM
 
 /** A Google that answers like the documentation says, and records what it was asked */
 function fakeGoogle(
-    options: { pendingPolls?: number; sourcesAfter?: number; pages?: AmbientMediaItem[][]; partner?: boolean } = {},
+    options: {
+        pendingPolls?: number;
+        sourcesAfter?: number;
+        pages?: AmbientMediaItem[][];
+        partner?: boolean;
+        /** DELETE of a device fails */
+        deleteFails?: boolean;
+    } = {},
 ): {
     calls: Call[];
     fetchFn: typeof fetch;
@@ -63,6 +70,11 @@ function fakeGoogle(
         const method = init.method || 'GET';
         const headers = (init.headers || {}) as Record<string, string>;
         calls.push({ method, url, body: init.body as string | undefined, auth: headers.Authorization });
+        if (url === 'https://www.googleapis.com/oauth2/v3/userinfo') {
+            return Promise.resolve(
+                json({ sub: '1', name: 'Demo User', picture: 'https://lh3.googleusercontent.test/a/demo"x' }),
+            );
+        }
         if (url === `${OAUTH}/device`) {
             return Promise.resolve(
                 json({
@@ -122,6 +134,9 @@ function fakeGoogle(
             return Promise.resolve(json(device(false)));
         }
         if (url.startsWith(`${API}/devices/`) && method === 'DELETE') {
+            if (options.deleteFails) {
+                return Promise.resolve(json({ error: { code: 503, status: 'UNAVAILABLE', message: 'later' } }, 503));
+            }
             state.deleted.push(decodeURIComponent(url.substring(`${API}/devices/`.length)));
             return Promise.resolve(json({}));
         }
@@ -226,14 +241,25 @@ describe('Google Photos', () => {
         assert.equal(create.auth, 'Bearer at1');
         assert.equal(google.state.refreshes, 0);
 
+        // name and avatar of the account, read with the token of the sign-in, for the settings
+        const profile = google.calls.find(call => call.url.endsWith('/oauth2/v3/userinfo'));
+        assert.equal(profile?.auth, 'Bearer at1');
         assert.deepEqual(saved, [
             {
                 refreshToken: 'rt1',
                 deviceId: 'dev1',
                 requestId: '0b2b7c4e-3f1a-4d2e-9c8b-7a6f5e4d3c2b',
                 displayName: 'ioBroker test',
+                name: 'Demo User',
+                picture: 'https://lh3.googleusercontent.test/a/demo"x',
             },
         ]);
+        assert.deepEqual(statuses.at(-1), {
+            state: 'connected',
+            settingsUri: 'https://photos.google.com/ambient/dev1',
+            sources: [{ id: 'src-family', displayName: 'Familie' }],
+            account: { name: 'Demo User', picture: 'https://lh3.googleusercontent.test/a/demo"x' },
+        });
         // polled at the pace Google asked for: 5 s for the token, 3.5 s for the device
         assert.deepEqual(sleeps.slice(0, 3), [5000, 5000, 5000]);
         assert.ok(sleeps.includes(3500));
@@ -295,15 +321,28 @@ describe('Google Photos', () => {
         await ok.connection.start();
         assert.equal(ok.connection.status.state, 'connected');
         assert.equal(ok.chosen.length, 0);
+        // an account kept before names were read gets them once
+        assert.equal(ok.saved.length, 1);
+        assert.equal(ok.saved[0]?.name, 'Demo User');
+        const status = ok.connection.status;
+        assert.equal(status.state === 'connected' ? status.account?.name : '', 'Demo User');
 
-        const gone = connection(fakeGoogle(), { ...account, deviceId: 'gone' });
+        // removed in the app: the consent is withdrawn and nothing of the account is kept
+        const goneGoogle = fakeGoogle();
+        const gone = connection(goneGoogle, { ...account, deviceId: 'gone' });
         await gone.connection.start();
         assert.equal(gone.connection.status.state, 'gone');
         assert.equal(gone.connection.access(), null);
+        await until(() => gone.saved.at(-1) === null);
+        assert.deepEqual(goneGoogle.state.revoked, ['rt1']);
 
-        const revoked = connection(fakeGoogle(), { ...account, refreshToken: 'revoked' });
+        // revoked in the Google account: nothing of the account is kept
+        const revokedGoogle = fakeGoogle();
+        const revoked = connection(revokedGoogle, { ...account, refreshToken: 'revoked' });
         await revoked.connection.start();
         assert.equal(revoked.connection.status.state, 'expired');
+        await until(() => revoked.saved.at(-1) === null);
+        assert.deepEqual(revokedGoogle.state.revoked, []);
     });
 
     it('disconnects: device removed, consent withdrawn, account forgotten', async () => {
@@ -314,9 +353,27 @@ describe('Google Photos', () => {
         await c.disconnect();
         assert.deepEqual(google.state.deleted, ['dev1']);
         assert.deepEqual(google.state.revoked, ['rt1']);
-        assert.deepEqual(saved, [null]);
+        assert.deepEqual(saved.at(-1), null);
         assert.equal(c.status.state, 'disconnected');
         assert.equal(c.access(), null);
+    });
+
+    it('withdraws the consent on disconnect also where the device cannot be removed', async () => {
+        const google = fakeGoogle({ sourcesAfter: 0, deleteFails: true });
+        const account: GoogleAccount = {
+            refreshToken: 'rt1',
+            deviceId: 'dev1',
+            requestId: 'r',
+            displayName: 'x',
+            name: 'Demo User',
+        };
+        const { connection: c, saved } = connection(google, account);
+        await c.start();
+        await c.disconnect();
+        assert.deepEqual(google.state.deleted, []);
+        assert.deepEqual(google.state.revoked, ['rt1']);
+        assert.deepEqual(saved, [null]);
+        assert.equal(c.status.state, 'disconnected');
     });
 
     it('reads a source chosen in the app, page by page, without videos', async () => {
@@ -449,5 +506,43 @@ describe('Google Photos', () => {
         );
         assert.doesNotMatch(connected, /<b>|href="javascript/);
         assert.match(connected, /&#60;b&#62;Familie/);
+
+        // the account with its avatar, and a QR code to the settings of the device in the app
+        const qr = (text: string): string => `[QR ${text}]`;
+        const withAccount = statusHtml(
+            {
+                state: 'connected',
+                settingsUri: 'https://photos.google.com/ambient/dev1',
+                sources: [],
+                account: { name: 'Demo <User>', picture: 'https://lh3.test/a"onerror="x' },
+            },
+            word,
+            () => '',
+            qr,
+        );
+        assert.match(withAccount, /<img src="https:\/\/lh3\.test\/a&#34;onerror=&#34;x" alt="" width="32" height="32"/);
+        assert.match(withAccount, /google_status_account\(Demo &#60;User&#62;\)/);
+        assert.match(withAccount, /\[QR https:\/\/photos\.google\.com\/ambient\/dev1\]/);
+        assert.match(withAccount, /google_status_connected\(google_status_curated\(\)\)/);
+        // no QR code for an address that is not https, and none for no account
+        assert.doesNotMatch(
+            statusHtml({ state: 'sources', settingsUri: '' }, word, () => '', qr),
+            /\[QR|<img/,
+        );
+        // the code is shown with a QR code of the page to enter it on
+        assert.match(
+            statusHtml(
+                { state: 'code', userCode: 'X', verificationUrl: 'https://www.google.com/device', expiresAt: 0 },
+                word,
+                () => '',
+                qr,
+            ),
+            /\[QR https:\/\/www\.google\.com\/device\]/,
+        );
+        // the real QR code is an SVG on white
+        assert.match(
+            statusHtml({ state: 'sources', settingsUri: 'https://photos.google.com/x' }, word, () => ''),
+            /<svg[^>]*>.*fill="white"/,
+        );
     });
 });

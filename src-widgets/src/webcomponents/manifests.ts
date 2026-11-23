@@ -114,7 +114,7 @@ function sourcePanel(): WebComponentSettingsPanel {
             label: tr('album'),
             help: tr('album_tooltip'),
             command: 'getAlbums',
-             
+
             instance: '${data.instance}',
             hidden: NOT_ADAPTER,
         },
@@ -165,7 +165,13 @@ function sourcePanel(): WebComponentSettingsPanel {
         folder: { type: 'text', label: tr('folder'), help: tr('wc_folder_tooltip'), hidden: NOT_FOLDER },
         recursive: checkbox('recursive', false, { hidden: NOT_FOLDER }),
         albumOid: stateId('album_oid', { help: tr('album_oid_tooltip'), hidden: NOT_FOLDER_OR_ADAPTER }),
-        urls: { type: 'text', label: tr('urls'), help: tr('urls_tooltip'), minRows: 5, hidden: "data.source !== 'list'" },
+        urls: {
+            type: 'text',
+            label: tr('urls'),
+            help: tr('urls_tooltip'),
+            minRows: 5,
+            hidden: "data.source !== 'list'",
+        },
         listOid: stateId('list_oid', { help: tr('list_oid_tooltip'), hidden: "data.source !== 'state'" }),
     });
 }
@@ -248,12 +254,19 @@ function infoPanel(clockByDefault: boolean): WebComponentSettingsPanel {
             ['center', 'pos_center'],
         ]),
         weatherDivider: { type: 'divider' },
+        weatherSource: {
+            type: 'selectSendTo',
+            label: tr('weather_source'),
+            help: tr('weather_source_tooltip'),
+            command: 'weatherSources',
+            instance: '${data.instance}',
+        },
         weatherTempOid: stateId('weather_temperature', { help: tr('weather_tooltip') }),
         weatherTextOid: stateId('weather_text', { help: tr('weather_text_tooltip') }),
         weatherIconOid: stateId('weather_icon', { help: tr('weather_icon_tooltip') }),
-        weatherWindOid: stateId('weather_wind'),
-        weatherHumidityOid: stateId('weather_humidity'),
-        weatherPrecipOid: stateId('weather_precipitation'),
+        weatherWindOid: stateId('weather_wind', { help: tr('weather_override_tooltip') }),
+        weatherHumidityOid: stateId('weather_humidity', { help: tr('weather_override_tooltip') }),
+        weatherPrecipOid: stateId('weather_precipitation', { help: tr('weather_override_tooltip') }),
     });
 }
 

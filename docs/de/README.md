@@ -104,17 +104,22 @@ Gut zu wissen:
 - Von unterwegs hochladen: über ein VPN wie Tailscale oder WireGuard; die Adresse im VPN zeigt der Status mit an. In
   der Immich-App wechselt *Einstellungen → Netzwerk → Automatischer URL-Wechsel* je nach WLAN zwischen der lokalen
   Adresse und der im VPN. Den Port nicht ins Internet freigeben: Immich spricht hier nur HTTP.
+- Im **Schnellzugriff** des Admins erscheint eine Kachel „Immich“, die Immich im Browser öffnet — bei Immich in Docker
+  wie bei einem eigenen Immich-Server. Ohne Immich verschwindet sie wieder. Kommt sie dazu oder geht sie, startet die
+  Instanz einmal neu.
 
 #### Google Fotos
 
 ioBroker wird in Google Fotos zu einem Gerät wie ein digitaler Bilderrahmen. Was es zeigt, wählt man in der
 Google-Fotos-App: Alben, Personen, Haustiere.
 
-1. Einstellungen der Instanz, Reiter **Google Fotos**, **Mit Google Fotos verbinden**. Ein Code erscheint.
+1. Einstellungen der Instanz, Reiter **Google Fotos**. Unter *Name in Google Fotos* lässt sich ein eigener Name für
+   das Gerät eintragen (leer: „ioBroker &lt;Host&gt;“). **Mit Google Fotos verbinden**: ein Code und ein QR-Code
+   erscheinen. Der Text darüber sagt, was ioBroker sehen darf.
 2. Auf dem Handy oder Computer `google.com/device` öffnen (oder den QR-Code scannen), den Code eingeben, mit dem
    Google-Konto anmelden und zustimmen.
-3. Danach öffnet sich Google Fotos bei „ioBroker &lt;Host&gt;“: dort auswählen, was gezeigt wird. Später geht das
-   über **Auswählen, was gezeigt wird**.
+3. Danach öffnet sich Google Fotos beim Gerät: dort auswählen, was gezeigt wird. Später geht das über **Auswählen, was
+   gezeigt wird** oder den QR-Code neben dem Status. Der Reiter zeigt das verbundene Konto mit Name und Profilbild.
 4. Im Reiter *Alben* ein Album mit der Quelle *Google Fotos* anlegen: *Ordner oder Album* leer für die Auswahl von
    Google, oder der Name einer gewählten Quelle (z. B. `Familie`).
 
@@ -125,10 +130,17 @@ Gut zu wissen:
   ist der Aufnahmezeitpunkt.
 - Ein Album nimmt bis zu 500 Bilder und wird höchstens alle 3 Stunden neu gelesen: Google erlaubt einem Gerät
   240 Abrufe der Liste am Tag. Videos werden übersprungen. Einen Ort liefert Google nicht.
-- **Trennen** entfernt das Gerät in Google Fotos und widerruft die Zustimmung. Wurde ioBroker in der App entfernt
-  oder die Zustimmung im Google-Konto widerrufen, zeigt der Reiter das an: einfach neu verbinden.
+- ioBroker sieht nur Name und Profilbild des Kontos und die Fotos, die in der App für das Gerät gewählt sind; es
+  ändert und löscht nichts in Google Fotos.
+- Verkleinerte Kopien von Google-Bildern bleiben höchstens 60 Minuten im Cache, danach werden sie neu geholt (so
+  verlangt es Google).
+- **Trennen** entfernt das Gerät in Google Fotos, widerruft die Zustimmung (auch wenn das Entfernen scheitert) und
+  löscht die Kopien, die Liste der Bilder (Kennung, Aufnahmedatum, Größe) und das gespeicherte Konto. Wurde ioBroker
+  in der App entfernt oder die Zustimmung im Google-Konto widerrufen, zeigt der Reiter das an, und all das wird
+  ebenfalls gelöscht (nach dem Entfernen in der App wird auch die Zustimmung widerrufen): einfach neu verbinden.
 - Die Anmeldung läuft über den OAuth-Dienst von ioBroker (`oauth2.iobroker.in`), dort liegt das Client-Secret.
   Der Refresh-Token liegt verschlüsselt in der Instanz. Die Bilder gehen direkt von Google zum ioBroker-Host.
+- Was wo und wie lange gespeichert wird: [Datenschutzerklärung für Google Fotos](https://www.iobroker.com/policy/google-photos?lang=de).
 
 ### Liste von URLs
 
@@ -210,9 +222,14 @@ Sekunde hinaus.
 Die Uhr (Uhrzeit groß, darunter das Datum) ist für eine ganze Seite und den Bildschirmschoner gedacht; beim
 Bildschirmschoner ist sie voreingestellt. Ihre Größe richtet sich nach dem Rahmen.
 
-Die **Wetterkarte** unter der Uhr erscheint, sobald ein Datenpunkt für Temperatur, Wettertext oder Wettersymbol
-gesetzt ist. Wind, Luftfeuchte und Niederschlag kommen dazu, wenn der Rahmen breit genug ist. Die Einheiten
-stammen aus den Objekten der Datenpunkte.
+Die **Wetterkarte** unter der Uhr erscheint, sobald Temperatur, Wettertext oder Wettersymbol bekannt sind. Wind,
+Luftfeuchte und Niederschlag kommen dazu, wenn der Rahmen breit genug ist. Die Einheiten stammen aus den Objekten der
+Datenpunkte.
+
+Am einfachsten wählt man eine **Wetterquelle**: Die Liste zeigt das aktuelle Wetter aller Wetteradapter
+(z. B. `open-meteo-weather.0 · Boot` oder `openweathermap.0`). Die sechs Werte werden dort anhand ihrer Rollen gefunden;
+unter dem Feld steht, welche es gibt. Ein Datenpunkt in den Feldern darunter ersetzt nur seinen eigenen Wert — etwa die
+draußen gemessene Temperatur statt der des Wetterdienstes. Ohne Wetterquelle kommen alle Werte aus diesen Feldern.
 
 Das **Wettersymbol** darf ein WMO-Wettercode sein (wie open-meteo und DWD ihn liefern), ein Text („Schneefall“,
 „Leichter Regen“, „overcast clouds“ — in elf Sprachen erkannt) oder die URL eines Bilds. Ohne Datenpunkt für das

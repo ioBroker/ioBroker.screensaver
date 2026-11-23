@@ -33,14 +33,18 @@
     "tab_google": "Google Fotos",
     "type_google": "Google Fotos",
     "google_help": "Muestra fotos de tu biblioteca de Google Fotos. ioBroker se convierte en un dispositivo en Google Fotos, como un marco de fotos: en la app Google Fotos eliges qué álbumes, personas o mascotas muestra. Google excluye por sí mismo las capturas de pantalla, los documentos y las fotos muy personales. Después añade en la primera pestaña un álbum con la fuente Google Fotos: en el campo de la carpeta, el nombre de una fuente elegida en la app, o nada para la selección de Google.",
+    "google_permissions": "Al conectar, Google le pide que permita dos cosas a ioBroker: ver su nombre y su foto de perfil, para que esta página muestre qué cuenta de Google está conectada, y ver las fotos que elija para este dispositivo en la app Google Fotos. ioBroker no ve el resto de su biblioteca de Google Fotos y no puede cambiar ni borrar nada. Las copias de las fotos se guardan como mucho 60 minutos. \"Desconectar\" quita el dispositivo de Google Fotos, retira el permiso y borra las copias.",
+    "google_device_name": "Nombre en Google Fotos",
+    "google_device_name_help": "El nombre de este dispositivo en la app Google Fotos, donde elige lo que muestra. Vacío: ioBroker y el nombre del host. Se usa al conectar.",
     "google_status_label": "Estado",
     "google_qr": "Escanea con el móvil",
     "google_connect": "Conectar con Google Fotos",
     "google_choose": "Elegir qué se muestra",
     "google_disconnect": "Desconectar",
-    "google_disconnect_confirm": "¿Quitar ioBroker de Google Fotos? Los álbumes de Google Fotos quedan vacíos hasta que vuelvas a conectar.",
+    "google_disconnect_confirm": "¿Quitar ioBroker de Google Fotos? Se retira el permiso y se borran las copias de las fotos. Los álbumes de Google Fotos quedan vacíos hasta que vuelva a conectar.",
     "google_cancel": "Cancelar",
     "google_status_disconnected": "No conectado.",
+    "google_status_account": "Cuenta de Google: %s",
     "google_status_code": "Abre %s en un móvil o un ordenador (o escanea el código QR) e introduce este código:",
     "google_status_code_until": "El código es válido hasta las %s.",
     "google_status_sources": "Conectado. Ahora elige en Google Fotos qué muestra ioBroker:",
@@ -92,5 +96,6 @@
     "immich_status_error": "Error: %s",
     "immich_status_open": "Abrir Immich",
     "immich_status_app": "Dirección del servidor para la app de Immich: %s",
-    "immich_status_local_only": "Immich solo escucha en este host: la app del móvil no puede llegar. Elige 0.0.0.0 o una IP del host."
+    "immich_status_local_only": "Immich solo escucha en este host: la app del móvil no puede llegar. Elige 0.0.0.0 o una IP del host.",
+    "weather_source_none": "Ninguna"
 }

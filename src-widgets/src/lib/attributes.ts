@@ -10,6 +10,7 @@ import type { RxWidgetInfoAttributesField, RxWidgetInfoGroup, WidgetData } from 
 
 import { renderAlbumField } from '../components/AlbumField';
 import { renderFolderField } from '../components/FolderField';
+import { renderWeatherSourceField } from '../components/WeatherSourceField';
 import { ADAPTER_NAME } from './config';
 
 export interface GroupOptions {
@@ -68,8 +69,7 @@ export function sourceGroup(options: GroupOptions = {}): RxWidgetInfoGroup {
                     label: 'album',
                     tooltip: 'album_tooltip',
                     type: 'custom',
-                    component: (field, data, onDataChange, props) =>
-                        renderAlbumField(field, data, onDataChange, props),
+                    component: (field, data, onDataChange, props) => renderAlbumField(field, data, onDataChange, props),
                     hidden: isSource('adapter'),
                 },
                 {
@@ -378,6 +378,14 @@ export function infoGroup(options: GroupOptions = {}): RxWidgetInfoGroup {
                 },
                 { name: 'weatherDelimiter', type: 'delimiter' },
                 {
+                    name: 'weatherSource',
+                    label: 'weather_source',
+                    tooltip: 'weather_source_tooltip',
+                    type: 'custom',
+                    component: (field, data, onDataChange, props) =>
+                        renderWeatherSourceField(field, data, onDataChange, props),
+                },
+                {
                     name: 'weatherTempOid',
                     label: 'weather_temperature',
                     tooltip: 'weather_tooltip',
@@ -401,18 +409,21 @@ export function infoGroup(options: GroupOptions = {}): RxWidgetInfoGroup {
                 {
                     name: 'weatherWindOid',
                     label: 'weather_wind',
+                    tooltip: 'weather_override_tooltip',
                     type: 'id',
                     noInit: true,
                 },
                 {
                     name: 'weatherHumidityOid',
                     label: 'weather_humidity',
+                    tooltip: 'weather_override_tooltip',
                     type: 'id',
                     noInit: true,
                 },
                 {
                     name: 'weatherPrecipOid',
                     label: 'weather_precipitation',
+                    tooltip: 'weather_override_tooltip',
                     type: 'id',
                     noInit: true,
                 },

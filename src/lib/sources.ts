@@ -43,6 +43,8 @@ export interface PictureSource {
     read(key: string, edge: number): Promise<Buffer>;
     /** A file of the storage a browser may load as it is, like `0_userdata.0/fotos/a.jpg` */
     storagePath?(key: string): string;
+    /** Drop what the source keeps in memory of a previous answer (the access to it was withdrawn) */
+    forget?(): void;
 }
 
 /** What the source of a storage folder needs of the adapter */

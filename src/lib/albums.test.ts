@@ -39,6 +39,10 @@ function memoryStore(): IndexStore & { saved: Map<string, Picture[]> } {
             saved.set(albumId, JSON.parse(JSON.stringify(pictures)) as Picture[]);
             return Promise.resolve();
         },
+        remove: albumId => {
+            saved.delete(albumId);
+            return Promise.resolve();
+        },
     };
 }
 
@@ -389,11 +393,12 @@ describe('an album of Google Photos', () => {
         };
         const storage = memoryCache();
         const cache = new PictureCache(storage, 'screensaver.0', sharp, 1e9);
+        const store = memoryStore();
         const albums = new Albums({
             storage: noStorage,
             immich: null,
             google,
-            store: memoryStore(),
+            store,
             cache,
             log: quiet,
             maxEdge: 2560,
@@ -424,5 +429,82 @@ describe('an album of Google Photos', () => {
         assert.match(picture.url || '', /^screensaver\.0\/cache\/gp\/[0-9a-f]{20}_1280\.jpg$/);
         const copy = await sharp(storage.files.get(picture.url.replace('screensaver.0/', ''))).metadata();
         assert.equal(Math.max(copy.width, copy.height), 1280);
+        assert.deepEqual(
+            store.saved
+                .get('gp')
+                ?.map(stored => stored.key)
+                .sort(),
+            ['x1', 'x2'],
+        );
+
+        // disconnected: neither the copies nor the list of the media stay
+        connected = false;
+        await cache.forgetAlbum('gp');
+        await albums.get('gp').forget();
+        assert.equal(store.saved.has('gp'), false);
+        assert.equal(
+            [...storage.files.keys()].some(path => path.startsWith('cache/gp/')),
+            false,
+        );
+        assert.deepEqual(await albums.list({ album: 'gp' }), {
+            error: 'album_failed',
+            reason: 'Google Photos is not connected: connect it in the settings of the instance',
+            total: 0,
+        });
+    });
+
+    it('does not store the list again when a scan ends after the access was withdrawn', async () => {
+        let answer: (items: unknown) => void = () => undefined;
+        let asked = false;
+        const fetchFn = ((input: string | URL) => {
+            const url = String(input);
+            if (url.endsWith('/refresh')) {
+                return Promise.resolve(new Response(JSON.stringify({ access_token: 'at', expires_in: 3600 })));
+            }
+            if (url.startsWith('https://photosambient.googleapis.com/v1/mediaItems')) {
+                // the list comes late: after the disconnect
+                asked = true;
+                return new Promise<Response>(resolve => {
+                    answer = items => resolve(new Response(JSON.stringify({ mediaItems: items })));
+                });
+            }
+            return Promise.resolve(new Response('', { status: 404 }));
+        }) as typeof fetch;
+        const client = new AmbientClient(
+            new GoogleSession(new OAuthProxy('https://oauth.test', fetchFn), 'rt'),
+            fetchFn,
+        );
+        const store = memoryStore();
+        const albums = new Albums({
+            storage: noStorage,
+            immich: null,
+            google: {
+                access: () => ({ client, deviceId: 'dev1', sources: [] }),
+                refreshSources: () => Promise.resolve([]),
+            },
+            store,
+            cache: new PictureCache(memoryCache(), 'screensaver.0', sharp, 1e9),
+            log: quiet,
+            maxEdge: 2560,
+        });
+        albums.configure([{ enabled: true, id: 'gp', name: 'Google', type: 'google', location: '', recursive: false }]);
+        const index = albums.get('gp');
+        const scan = index.scan();
+        for (let i = 0; i < 100 && !asked; i++) {
+            await new Promise(resolve => setImmediate(resolve));
+        }
+        assert.ok(asked, 'the list of the media was asked for');
+        await index.forget();
+        answer([
+            {
+                id: 'late',
+                createTime: '2026-11-19T10:00:00Z',
+                mediaFile: { baseUrl: 'https://lh3.test/late', mimeType: 'image/jpeg' },
+            },
+        ]);
+        await scan;
+        assert.equal(index.size, 0);
+        assert.equal(index.ready, false);
+        assert.equal(store.saved.has('gp'), false);
     });
 });

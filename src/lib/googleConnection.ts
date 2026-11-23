@@ -20,12 +20,14 @@ import {
     type AmbientDevice,
     type AmbientMediaSource,
     type GoogleAccess,
+    type GoogleProfile,
     type GoogleTokens,
     type OAuthProxy,
 } from './googlePhotos';
 import { escapeHtml, link } from './html';
+import { qrSvg } from './qr';
 
-export interface GoogleAccount {
+export interface GoogleAccount extends GoogleProfile {
     refreshToken: string;
     deviceId: string;
     requestId: string;
@@ -35,8 +37,8 @@ export interface GoogleAccount {
 export type GoogleStatus =
     | { state: 'disconnected' }
     | { state: 'code'; userCode: string; verificationUrl: string; expiresAt: number }
-    | { state: 'sources'; settingsUri: string }
-    | { state: 'connected'; settingsUri: string; sources: AmbientMediaSource[] }
+    | { state: 'sources'; settingsUri: string; account?: GoogleProfile }
+    | { state: 'connected'; settingsUri: string; sources: AmbientMediaSource[]; account?: GoogleProfile }
     /** The refresh token was revoked or ran out (7 days while the OAuth app of Google is in testing) */
     | { state: 'expired' }
     /** The device was removed in the Google Photos app */
@@ -162,6 +164,29 @@ export class GoogleConnection implements GoogleAccess {
         return new AmbientClient(session, this.options.fetchFn, this.now);
     }
 
+    /** The connected account for a status: name and avatar, where they are known */
+    private shownAccount(): { account?: GoogleProfile } {
+        const { name, picture } = this.account || {};
+        if (!name && !picture) {
+            return {};
+        }
+        return { account: { ...(name ? { name } : {}), ...(picture ? { picture } : {}) } };
+    }
+
+    /**
+     * Name and avatar of the account: shown in the settings. Without them the connection works all the same.
+     *
+     * @param client - of the account
+     */
+    private async readProfile(client: AmbientClient): Promise<GoogleProfile> {
+        try {
+            return await client.profile();
+        } catch (e) {
+            this.options.log.debug(`Google Photos: the name of the account is not known: ${errorText(e)}`);
+            return {};
+        }
+    }
+
     private use(account: GoogleAccount, client = this.makeClient(account.refreshToken)): AmbientClient {
         this.account = account;
         this.client = client;
@@ -176,6 +201,14 @@ export class GoogleConnection implements GoogleAccess {
             return;
         }
         const client = this.use(account);
+        if (!account.name && !account.picture) {
+            // connected by a version that did not keep them
+            const profile = await this.readProfile(client);
+            if (profile.name || profile.picture) {
+                this.account = { ...account, ...profile };
+                await this.options.saveAccount(this.account);
+            }
+        }
         await this.check(this.restart(), client, account.deviceId);
     }
 
@@ -195,9 +228,10 @@ export class GoogleConnection implements GoogleAccess {
                     state: 'connected',
                     settingsUri: device.settingsUri || '',
                     sources: device.mediaSources || [],
+                    ...this.shownAccount(),
                 });
             } else {
-                this.setStatus({ state: 'sources', settingsUri: device.settingsUri || '' });
+                this.setStatus({ state: 'sources', settingsUri: device.settingsUri || '', ...this.shownAccount() });
                 void this.waitForSources(signal);
             }
         } catch (e) {
@@ -206,11 +240,38 @@ export class GoogleConnection implements GoogleAccess {
     }
 
     /**
+     * The access to the stored account is gone: nothing of it is kept, not the name, not the picture, not the token
+     *
+     * @param revoke - withdraw the consent first: the token may still be good (the device was removed in the app)
+     */
+    private async forgetAccount(revoke: boolean): Promise<void> {
+        const account = this.account;
+        this.account = null;
+        this.client = null;
+        if (!account) {
+            return;
+        }
+        if (revoke) {
+            try {
+                await this.options.oauth.revoke(account.refreshToken);
+            } catch (e) {
+                this.options.log.debug(`Google Photos: the consent was not withdrawn: ${errorText(e)}`);
+            }
+        }
+        try {
+            await this.options.saveAccount(null);
+        } catch (e) {
+            this.options.log.warn(`Google Photos: the account was not deleted: ${errorText(e)}`);
+        }
+    }
+
+    /**
      * What an error means for the connection
      *
      * @param e - what was thrown
+     * @param ofAccount - the error is one of the stored account, not of a new sign-in (that leaves the account alone)
      */
-    private fail(e: unknown): void {
+    private fail(e: unknown, ofAccount = true): void {
         if (isNotAllowed(e)) {
             this.options.log.warn(
                 'Google Photos: Google keeps the Ambient API closed for the OAuth client of ioBroker (partner program of Google Photos)',
@@ -220,10 +281,16 @@ export class GoogleConnection implements GoogleAccess {
         } else if (e instanceof GoogleError && (e.code === 'invalid_grant' || e.code === 'unauthorized_client')) {
             this.options.log.warn('Google Photos: the sign-in ran out or was revoked; connect again in the settings');
             this.device = null;
+            if (ofAccount) {
+                void this.forgetAccount(false);
+            }
             this.setStatus({ state: 'expired' });
         } else if (e instanceof GoogleError && e.status === 404) {
             this.options.log.warn('Google Photos: the device was removed in the Google Photos app; connect again');
             this.device = null;
+            if (ofAccount) {
+                void this.forgetAccount(true);
+            }
             this.setStatus({ state: 'gone' });
         } else {
             // Google or the OAuth service is not reachable now: the albums keep what they had
@@ -259,6 +326,7 @@ export class GoogleConnection implements GoogleAccess {
                         state: 'connected',
                         settingsUri: device.settingsUri || '',
                         sources: device.mediaSources || [],
+                        ...this.shownAccount(),
                     });
                     this.options.onSourcesChosen();
                     return;
@@ -322,7 +390,7 @@ export class GoogleConnection implements GoogleAccess {
                 await this.finish(signal, poll.tokens, requestId, displayName);
                 return;
             } catch (e) {
-                this.fail(e);
+                this.fail(e, false);
                 return;
             }
         }
@@ -343,6 +411,7 @@ export class GoogleConnection implements GoogleAccess {
         }
         const previous = this.account;
         const client = this.makeClient(tokens.refresh_token, tokens);
+        const profile = await this.readProfile(client);
         let device: AmbientDevice;
         try {
             device = await client.createDevice(requestId, displayName);
@@ -360,6 +429,7 @@ export class GoogleConnection implements GoogleAccess {
             deviceId: device.id,
             requestId,
             displayName,
+            ...profile,
         };
         this.use(account, client);
         this.device = device;
@@ -374,10 +444,11 @@ export class GoogleConnection implements GoogleAccess {
                 state: 'connected',
                 settingsUri: device.settingsUri || '',
                 sources: device.mediaSources || [],
+                ...this.shownAccount(),
             });
             this.options.onSourcesChosen();
         } else {
-            this.setStatus({ state: 'sources', settingsUri: device.settingsUri || '' });
+            this.setStatus({ state: 'sources', settingsUri: device.settingsUri || '', ...this.shownAccount() });
             await this.waitForSources(signal);
         }
     }
@@ -385,11 +456,15 @@ export class GoogleConnection implements GoogleAccess {
     private async removeDevice(account: GoogleAccount): Promise<void> {
         const session = new GoogleSession(this.options.oauth, account.refreshToken, this.now);
         const client = new AmbientClient(session, this.options.fetchFn, this.now);
-        await client.deleteDevice(account.deviceId || account.requestId);
-        await this.options.oauth.revoke(account.refreshToken);
+        try {
+            await client.deleteDevice(account.deviceId || account.requestId);
+        } finally {
+            // the consent is withdrawn even where the device cannot be removed
+            await this.options.oauth.revoke(account.refreshToken);
+        }
     }
 
-    /** Remove the device in Google Photos, withdraw the consent, forget the account */
+    /** Remove the device in Google Photos, withdraw the consent, forget the account (the adapter drops the copies) */
     async disconnect(): Promise<void> {
         this.restart();
         const account = this.account;
@@ -432,6 +507,7 @@ export class GoogleConnection implements GoogleAccess {
                     state: 'connected',
                     settingsUri: device.settingsUri || '',
                     sources: device.mediaSources || [],
+                    ...this.shownAccount(),
                 });
             }
             return device.mediaSources || [];
@@ -451,29 +527,83 @@ export class GoogleConnection implements GoogleAccess {
 export type Words = (key: string, ...args: string[]) => string;
 
 /**
+ * The connected account: avatar and name, as Google asks for it in the settings of a device
+ *
+ * @param account - name and avatar
+ * @param word - the words
+ */
+function accountHtml(account: GoogleProfile | undefined, word: Words): string {
+    if (!account?.name && !account?.picture) {
+        return '';
+    }
+    const avatar = account.picture
+        ? `<img src="${escapeHtml(account.picture)}" alt="" width="32" height="32" referrerpolicy="no-referrer" style="border-radius:50%">`
+        : '';
+    const name = account.name ? `<span>${escapeHtml(word('google_status_account', account.name))}</span>` : '';
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">${avatar}${name}</div>`;
+}
+
+/**
+ * Text and a QR code side by side, the code under the text where it is narrow
+ *
+ * @param text - the HTML of the text
+ * @param url - what the QR code opens; none without
+ * @param word - the words
+ * @param qr - makes the QR code
+ */
+function withQr(text: string, url: string, word: Words, qr: (text: string) => string): string {
+    if (!/^https:\/\//i.test(url)) {
+        return text;
+    }
+    return [
+        '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:16px">',
+        `<div style="flex:1 1 260px">${text}</div>`,
+        `<div style="text-align:center;font-size:0.85em">${qr(url)}<div>${escapeHtml(word('google_qr'))}</div></div>`,
+        '</div>',
+    ].join('');
+}
+
+/**
  * The status for the settings of the instance (a `state` control with `html`)
  *
  * @param status - of the connection
  * @param word - the words
  * @param timeText - a time as the user reads it, like 14:35
+ * @param qr - makes a QR code as SVG
  */
-export function statusHtml(status: GoogleStatus, word: Words, timeText: (time: number) => string): string {
+export function statusHtml(
+    status: GoogleStatus,
+    word: Words,
+    timeText: (time: number) => string,
+    qr: (text: string) => string = qrSvg,
+): string {
     switch (status.state) {
         case 'disconnected':
             return escapeHtml(word('google_status_disconnected'));
         case 'code': {
             const url = status.verificationUrl.replace(/^https?:\/\/(www\.)?/i, '');
-            return [
+            const text = [
                 `<div>${escapeHtml(word('google_status_code', '\u0000')).replace('\u0000', link(status.verificationUrl, url))}</div>`,
                 `<div style="font-size:2em;font-weight:bold;letter-spacing:0.12em;margin:0.3em 0">${escapeHtml(status.userCode)}</div>`,
                 `<div>${escapeHtml(word('google_status_code_until', timeText(status.expiresAt)))}</div>`,
             ].join('');
+            return withQr(text, status.verificationUrl, word, qr);
         }
         case 'sources':
-            return `${escapeHtml(word('google_status_sources'))} ${link(status.settingsUri, word('google_status_open_app'))}`;
+            return withQr(
+                `${accountHtml(status.account, word)}${escapeHtml(word('google_status_sources'))} ${link(status.settingsUri, word('google_status_open_app'))}`,
+                status.settingsUri,
+                word,
+                qr,
+            );
         case 'connected': {
             const names = status.sources.map(source => source.displayName || source.id).filter(Boolean);
-            return `${escapeHtml(word('google_status_connected', names.length ? names.join(', ') : word('google_status_curated')))} ${link(status.settingsUri, word('google_status_change'))}`;
+            return withQr(
+                `${accountHtml(status.account, word)}${escapeHtml(word('google_status_connected', names.length ? names.join(', ') : word('google_status_curated')))} ${link(status.settingsUri, word('google_status_change'))}`,
+                status.settingsUri,
+                word,
+                qr,
+            );
         }
         case 'expired':
             return escapeHtml(word('google_status_expired'));

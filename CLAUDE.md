@@ -4,8 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-The ioBroker adapter `screensaver` (renamed from `vis-2-widgets-screensaver`; the folder and the git remote still
-carry the old name). A **daemon backend** (`src/` → `build/src/main.js`) keeps albums, and a set of React widgets
+The ioBroker adapter `screensaver` (renamed from `vis-2-widgets-screensaver`; the repository is
+`ioBroker/ioBroker.screensaver`, only the local folder still carries the old name). A **daemon backend** (`src/` → `build/src/main.js`) keeps albums, and a set of React widgets
 that vis-2 loads through **Vite module federation**, plus one **vis-2 background service**:
 
 - `PhotoFrame` — the slideshow as a tile, a page or a free widget
@@ -61,6 +61,14 @@ Single build stages: `npx tsx tasks.ts --widget-2-compile` then `--widget-3-copy
   the instance config, so a save of the settings page cannot overwrite it and no restart follows. States
   `google.state`/`google.connected`/`google.status` (HTML for the `state` control of the settings). Budget:
   `mediaItems.list` 240×/device/day → list cached 3 h, ≤500 items, `baseUrl` (60 min) refreshed on demand.
+  Ambient UX rules the status follows (`statusHtml`): the connected account (name + avatar from `oauth2/v3/userinfo`,
+  scope `profile`, kept in the account) on `sources`/`connected`, a QR code (`lib/qr.ts`, qrcode-generator) of
+  google.com/device during the code and of the `settingsUri` afterwards; device name `googleDeviceName`. Google media
+  may be cached 60 min only: `PictureCache.setMaxAge` for google albums (`GOOGLE_MEDIA_MAX_AGE_MS`), `expire()`
+  every 5 min; when the status turns disconnected/expired/gone, `forgetAlbum` deletes the copies and
+  `AlbumIndex.forget()` the stored index and the list cached in `GoogleSource` (a scan still running is dropped);
+  `expired`/`gone` also delete the stored account (`gone` revokes the token first), a failed new sign-in does not. Disconnect revokes even if
+  `devices.delete` fails.
 - `lib/immichDocker.ts` + `docker-compose.yaml` — optional Immich in Docker through `@iobroker/plugin-docker`
   (`common.plugins.docker`, like the adapters `sql` and `frigate`). All services carry `iobWaitForReady`: `main.ts`
   creates the folder of the photos (`native.dockerImmich.location`, must start with `/`) and then calls
@@ -78,6 +86,10 @@ Single build stages: `npx tsx tasks.ts --widget-2-compile` then `--widget-3-copy
   signs in, creates a read-only API key, signs out; the key lives encrypted in `native.key` of `screensaver.0.immich`.
   Albums of type `immich` get the client as a function and are scanned when it is ready. The test runs the real
   compose file through the plugin's own parse/template/convert steps.
+- `lib/immichLink.ts` — the card "Immich" in admin's quick access (Intro): an entry `immich` of `common.localLinks`
+  of the instance object, `http://%ip%:<port>` for Docker (admin puts in the address of the instance's host) or the
+  URL of an own Immich. `onReady` writes it only when it changes: js-controller restarts the instance on every change
+  of its object.
 - `screensaver.0` is a `meta` object (instanceObjects `_id: ""`), so the cache is served by web (`/screensaver.0/…`)
   and admin (`/files/screensaver.0/…`).
 
@@ -103,6 +115,11 @@ not share `react/jsx-runtime`).
 - `lib/adapterAlbum.ts` — source `adapter`: `list` via `sendTo` (20 s timeout → `album_unreachable`), refreshed
   every 15 min and at local midnight; each `PhotoRef` has `resolve(target)` that asks `picture` only when the engine
   loads it (`photoLoader.preparePhoto` awaits it). `components/AlbumField.tsx` is the select of the albums.
+- `lib/weatherSource.ts` — the weather source: a channel of a weather adapter (`common.type` `weather`) whose states
+  are found by role (`slotRank`); an OID of the settings wins per value (`mergeWeather`). No React: the backend
+  answers `weatherSources` with it for the web component manifests (`selectSendTo`), the editor field
+  (`components/WeatherSourceField.tsx`) lists them itself, and `SlideShow` resolves the source at runtime
+  (`useWeatherSource`) and subscribes the states found itself — vis-2 only subscribes OIDs of attributes.
 - `lib/config.ts` — reads widget data into `FrameConfig`/`ScreensaverConfig`. The screensaver's fields are
   `noBinding`, because the service gets the data **unresolved** (`VisServiceProps.widgets[].data`).
 - `lib/attributes.ts` — attribute groups shared by both widgets (same field names on both).

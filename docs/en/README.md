@@ -100,17 +100,22 @@ Good to know:
 - Uploading while away: through a VPN like Tailscale or WireGuard; the status shows the address in the VPN too. In
   the Immich app *Settings → Networking → Automatic URL switching* changes between the local address and the one in
   the VPN depending on the Wi-Fi. Do not open the port to the internet: Immich speaks plain HTTP here.
+- The **quick access** (Intro) of admin gets a card "Immich" that opens Immich in the browser — for Immich in Docker
+  as for a server of its own. Without Immich it goes away again. When it comes or goes, the instance restarts once.
 
 #### Google Photos
 
 ioBroker becomes a device in Google Photos, like a digital photo frame. What it shows is chosen in the Google Photos
 app: albums, people, pets.
 
-1. Settings of the instance, tab **Google Photos**, **Connect with Google Photos**. A code appears.
+1. Settings of the instance, tab **Google Photos**. *Name in Google Photos* takes a name of your own for the device
+   (empty: "ioBroker &lt;host&gt;"). **Connect with Google Photos**: a code and a QR code appear. The text above
+   says what ioBroker may see.
 2. Open `google.com/device` on a phone or computer (or scan the QR code), enter the code, sign in with the Google
    account and agree.
-3. Google Photos then opens at "ioBroker &lt;host&gt;": choose there what is shown. Later this goes through
-   **Choose what is shown**.
+3. Google Photos then opens at the device: choose there what is shown. Later this goes through **Choose what is
+   shown** or the QR code next to the status. The tab shows the connected account with its name and profile
+   picture.
 4. In the *Albums* tab add an album with the source *Google Photos*: *Folder or album* empty for the selection of
    Google, or the name of a chosen source (like `Family`).
 
@@ -121,10 +126,17 @@ Good to know:
   the picture was taken.
 - An album takes up to 500 pictures and is read again at most every 3 hours: Google allows a device 240 reads of
   the list a day. Videos are skipped. Google gives no place.
-- **Disconnect** removes the device in Google Photos and withdraws the consent. If ioBroker was removed in the app or
-  the consent was withdrawn in the Google account, the tab says so: just connect again.
+- ioBroker sees only the name and profile picture of the account and the photos chosen for the device in the app;
+  it changes and deletes nothing in Google Photos.
+- Reduced copies of Google pictures stay in the cache for at most 60 minutes, then they are fetched again (as Google
+  requires).
+- **Disconnect** removes the device in Google Photos, withdraws the consent (even if removing fails) and deletes the
+  copies, the list of the pictures (ID, date taken, size) and the stored account. If ioBroker was removed in the app
+  or the consent was withdrawn in the Google account, the tab says so and all of it is deleted too (after a removal
+  in the app the consent is withdrawn as well): just connect again.
 - The sign-in goes through the OAuth service of ioBroker (`oauth2.iobroker.in`), which keeps the client secret. The
   refresh token is stored encrypted in the instance. The pictures go directly from Google to the ioBroker host.
+- What is stored where and for how long: [privacy policy for Google Photos](https://www.iobroker.com/policy/google-photos).
 
 ### List of URLs
 
@@ -204,9 +216,14 @@ answers are cached in the browser, and at most one request per second goes out.
 The clock (the time large, the date below) is meant for a whole page and the screensaver; for the screensaver it is
 on by default. Its size follows the frame.
 
-The **weather card** below the clock appears as soon as a state for the temperature, the weather text or the weather
-icon is set. Wind, humidity and precipitation join when the frame is wide enough. The units come from the objects of
-the states.
+The **weather card** below the clock appears as soon as the temperature, the weather text or the weather icon is
+known. Wind, humidity and precipitation join when the frame is wide enough. The units come from the objects of the
+states.
+
+The simplest is to choose a **weather source**: the list shows the current weather of all weather adapters (like
+`open-meteo-weather.0 · Boat` or `openweathermap.0`). The six values are found there by their roles; below the field
+it says which ones there are. A state in the fields below replaces only its own value — e.g. the temperature measured
+outside instead of the one of the weather service. Without a weather source all values come from these fields.
 
 The **weather icon** may be a WMO weather code (as open-meteo and DWD deliver it), a text ("Snowfall", "light rain",
 "Schneefall" — recognized in the languages of ioBroker) or the URL of a picture. Without an icon state the symbol is

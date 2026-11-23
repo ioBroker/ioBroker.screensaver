@@ -33,14 +33,18 @@
     "tab_google": "Google Photos",
     "type_google": "Google Photos",
     "google_help": "Affiche des photos de votre photothèque Google Photos. ioBroker devient un appareil dans Google Photos, comme un cadre photo : dans l'appli Google Photos, vous choisissez quels albums, personnes ou animaux il affiche. Google exclut de lui-même les captures d'écran, les documents et les photos très personnelles. Ajoutez ensuite un album avec la source Google Photos dans le premier onglet : dans le champ du dossier, le nom d'une source choisie dans l'appli, ou rien pour la sélection de Google.",
+    "google_permissions": "Lors de la connexion, Google vous demande d'autoriser deux choses à ioBroker : voir votre nom et votre photo de profil, pour que cette page indique quel compte Google est connecté, et voir les photos que vous choisissez pour cet appareil dans l'application Google Photos. ioBroker ne voit pas le reste de votre bibliothèque Google Photos et ne peut rien y modifier ni supprimer. Les copies des photos sont conservées 60 minutes au plus. « Déconnecter » retire l'appareil de Google Photos, révoque l'autorisation et supprime les copies.",
+    "google_device_name": "Nom dans Google Photos",
+    "google_device_name_help": "Le nom de cet appareil dans l'application Google Photos, où vous choisissez ce qu'il affiche. Vide : ioBroker et le nom de l'hôte. Utilisé lors de la connexion.",
     "google_status_label": "État",
     "google_qr": "Scannez avec le téléphone",
     "google_connect": "Connecter Google Photos",
     "google_choose": "Choisir ce qui est affiché",
     "google_disconnect": "Déconnecter",
-    "google_disconnect_confirm": "Retirer ioBroker de Google Photos ? Les albums de Google Photos restent vides jusqu'à une nouvelle connexion.",
+    "google_disconnect_confirm": "Retirer ioBroker de Google Photos ? L'autorisation est révoquée et les copies des photos sont supprimées. Les albums de Google Photos restent vides jusqu'à la prochaine connexion.",
     "google_cancel": "Annuler",
     "google_status_disconnected": "Non connecté.",
+    "google_status_account": "Compte Google : %s",
     "google_status_code": "Ouvrez %s sur un téléphone ou un ordinateur (ou scannez le code QR) et saisissez ce code :",
     "google_status_code_until": "Le code est valable jusqu'à %s.",
     "google_status_sources": "Connecté. Choisissez maintenant dans Google Photos ce qu'ioBroker affiche :",
@@ -92,5 +96,6 @@
     "immich_status_error": "Erreur : %s",
     "immich_status_open": "Ouvrir Immich",
     "immich_status_app": "Adresse du serveur pour l'application Immich : %s",
-    "immich_status_local_only": "Immich n'écoute que sur cet hôte : l'application du téléphone ne peut pas le joindre. Choisissez 0.0.0.0 ou une IP de l'hôte."
+    "immich_status_local_only": "Immich n'écoute que sur cet hôte : l'application du téléphone ne peut pas le joindre. Choisissez 0.0.0.0 ou une IP de l'hôte.",
+    "weather_source_none": "Aucune"
 }

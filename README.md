@@ -50,6 +50,9 @@ The web components take React from the host: web or admin must serve the shared 
 * (@GermanBluefox) Renamed to `screensaver`: a backend with albums from folders of the ioBroker files, folders of the server and Immich, filtered by date and reduced to the size of the frame
 * (@GermanBluefox) Albums from Google Photos (Ambient API): connect with a code on google.com/device, choose in the Google Photos app what is shown
 * (@GermanBluefox) Immich can run in Docker on the ioBroker host (optional): folder of the photos selectable, account and API key set up by the adapter, machine learning optional
+* (@GermanBluefox) Weather source: choose a weather adapter, the values of the weather card are found by their roles; single states replace single values, e.g. the temperature measured outside
+* (@GermanBluefox) A card for Immich in the quick access of admin, while Immich is set up
+* (@GermanBluefox) Google Photos: the connected account is shown with name and picture, QR codes for the sign-in and the settings of the device, own name of the device, the permissions are explained before connecting; copies of Google pictures are kept 60 minutes at most; copies, the list of the pictures and the account are deleted on disconnect and when the access is withdrawn in Google
 
 ## License
 

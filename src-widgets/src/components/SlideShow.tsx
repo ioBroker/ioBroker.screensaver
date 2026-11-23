@@ -3,11 +3,12 @@ import React from 'react';
 import type { Connection } from '@iobroker/gui-components';
 
 import type { FrameConfig } from '../lib/config';
-import { useElementSize, useLatest, type Size } from '../lib/hooks';
+import { useElementSize, useLatest, useStateValues, useWeatherSource, type Size } from '../lib/hooks';
 import { getLanguage, t } from '../lib/i18n';
 import { preparePhoto, type PreparedPhoto, type TargetSize } from '../lib/photoLoader';
 import { SlideEngine, isPortrait, type EngineSnapshot, type EngineTimers, type Layer } from '../lib/slideEngine';
 import { useImageList, type ListError, type ProjectLocation } from '../lib/useImageList';
+import { WEATHER_SLOTS, mergeWeather, type WeatherSlot } from '../lib/weatherSource';
 import Caption from './Caption';
 import InfoPanel from './InfoPanel';
 import { KEN_BURNS_VARIANTS, TEXT_SHADOW, ensureStyles } from './styles';
@@ -431,6 +432,17 @@ export default function SlideShow(props: SlideShowProps): React.JSX.Element {
         config.albumOid ? props.values[config.albumOid] : undefined,
     );
 
+    // The weather card: an object ID of the settings, else the state found in the weather source. The page
+    // subscribes only the IDs of the settings, so the ones of the source are subscribed here
+    const weatherFound = useWeatherSource(props.socket, config.weatherSource);
+    const weather = mergeWeather(config.weather, weatherFound.states);
+    const sourcedValues = useStateValues(
+        props.socket,
+        WEATHER_SLOTS.filter(slot => !config.weather[slot]).map(slot => weather[slot]),
+    );
+    const weatherValue = (slot: WeatherSlot): unknown =>
+        config.weather[slot] ? props.values[config.weather[slot]] : sourcedValues[weather[slot]];
+
     const externalPause = !!config.pauseOid;
     const [localPaused, setLocalPaused] = React.useState(false);
     const paused = externalPause ? isTrue(props.values[config.pauseOid]) : localPaused;
@@ -587,7 +599,7 @@ export default function SlideShow(props: SlideShowProps): React.JSX.Element {
     const transitionMs = config.transition === 'none' ? 0 : config.transitionTime * 1000;
     // the zoom runs a little longer than the picture stands, so it never comes to a halt in front of the viewer
     const kenBurnsMs = (config.interval + config.transitionTime * 2) * 1000;
-    const showsInfo = config.showClock || !!(config.weather.temperature || config.weather.text || config.weather.icon);
+    const showsInfo = config.showClock || !!(weather.temperature || weather.text || weather.icon);
     // a caption in the corner of the clock moves to the other corner
     const captionPosition =
         showsInfo && config.captionPosition === config.infoPosition
@@ -694,18 +706,18 @@ export default function SlideShow(props: SlideShowProps): React.JSX.Element {
             {size && (hasLayers || props.dark) ? (
                 <div style={{ position: 'absolute', inset: 0, zIndex: 4, pointerEvents: 'none' }}>
                     <InfoPanel
-                        config={config}
+                        config={{ ...config, weather }}
                         size={size}
                         lang={lang}
                         weather={{
-                            temperature: props.values[config.weather.temperature],
-                            text: props.values[config.weather.text],
-                            icon: props.values[config.weather.icon],
-                            wind: props.values[config.weather.wind],
-                            humidity: props.values[config.weather.humidity],
-                            precipitation: props.values[config.weather.precipitation],
+                            temperature: weatherValue('temperature'),
+                            text: weatherValue('text'),
+                            icon: weatherValue('icon'),
+                            wind: weatherValue('wind'),
+                            humidity: weatherValue('humidity'),
+                            precipitation: weatherValue('precipitation'),
                         }}
-                        units={props.units}
+                        units={{ ...weatherFound.units, ...props.units }}
                         brightness={brightness < 1 ? brightness : undefined}
                     />
                 </div>

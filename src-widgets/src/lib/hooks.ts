@@ -2,6 +2,8 @@ import React from 'react';
 
 import type { Connection } from '@iobroker/gui-components';
 
+import { NO_WEATHER, resolveWeatherSource, type FoundWeather, type ObjectMap } from './weatherSource';
+
 /** The size of an element, kept up to date */
 export interface Size {
     width: number;
@@ -146,7 +148,9 @@ export function useNow(withSeconds: boolean): Date {
             const date = new Date();
             setNow(date);
             // on the change of the second or of the minute, not some time after it
-            const wait = withSeconds ? 1000 - date.getMilliseconds() : 60000 - date.getSeconds() * 1000 - date.getMilliseconds();
+            const wait = withSeconds
+                ? 1000 - date.getMilliseconds()
+                : 60000 - date.getSeconds() * 1000 - date.getMilliseconds();
             timer = setTimeout(tick, Math.max(50, Math.min(wait, 10000)));
         };
         tick();
@@ -154,4 +158,35 @@ export function useNow(withSeconds: boolean): Date {
     }, [withSeconds]);
 
     return now;
+}
+
+/**
+ * The states of the weather card in a channel of a weather adapter, read once per source
+ *
+ * @param socket - the connection; one without `getObjectViewSystem` finds nothing
+ * @param source - the channel, like `openweathermap.0.forecast.current`; empty for none
+ */
+export function useWeatherSource(socket: Connection | null | undefined, source: string): FoundWeather {
+    const [result, setResult] = React.useState<{ source: string; found: FoundWeather }>({
+        source: '',
+        found: NO_WEATHER,
+    });
+
+    React.useEffect(() => {
+        if (!socket || !source || typeof socket.getObjectViewSystem !== 'function') {
+            return undefined;
+        }
+        let alive = true;
+        const view = (type: 'instance' | 'state', start: string, end: string): Promise<ObjectMap> =>
+            socket.getObjectViewSystem(type, start, end);
+        resolveWeatherSource(view, source).then(
+            found => alive && setResult({ source, found }),
+            () => alive && setResult({ source, found: NO_WEATHER }),
+        );
+        return () => {
+            alive = false;
+        };
+    }, [socket, source]);
+
+    return result.source === source ? result.found : NO_WEATHER;
 }

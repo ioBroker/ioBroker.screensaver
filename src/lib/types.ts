@@ -37,6 +37,8 @@ export interface ScreensaverAdapterConfig {
     /** The account of Immich in Docker: created on a new Immich, else used to sign in when a key is needed */
     immichEmail?: string;
     immichPassword?: string;
+    /** The name of the device in the Google Photos app; empty: "ioBroker <host>" */
+    googleDeviceName?: string;
 }
 
 /** A picture as an album knows it */

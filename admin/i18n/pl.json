@@ -33,14 +33,18 @@
     "tab_google": "Zdjęcia Google",
     "type_google": "Zdjęcia Google",
     "google_help": "Pokazuje zdjęcia z Twojej biblioteki Zdjęć Google. ioBroker staje się urządzeniem w Zdjęciach Google, jak ramka na zdjęcia: w aplikacji Zdjęcia Google wybierasz, które albumy, osoby lub zwierzęta pokazuje. Zrzuty ekranu, dokumenty i bardzo osobiste zdjęcia Google pomija sam. Następnie dodaj na pierwszej karcie album ze źródłem Zdjęcia Google: w polu folderu nazwa źródła wybranego w aplikacji lub nic dla wyboru Google.",
+    "google_permissions": "Podczas łączenia Google poprosi o zgodę na dwie rzeczy dla ioBroker: widzieć Twoje imię i zdjęcie profilowe, aby ta strona pokazywała, które konto Google jest połączone, oraz widzieć zdjęcia wybrane dla tego urządzenia w aplikacji Zdjęcia Google. Reszty biblioteki Zdjęć Google ioBroker nie widzi i nie może niczego w niej zmienić ani usunąć. Kopie zdjęć są przechowywane najwyżej 60 minut. „Rozłącz” usuwa urządzenie ze Zdjęć Google, cofa zgodę i usuwa kopie.",
+    "google_device_name": "Nazwa w Zdjęciach Google",
+    "google_device_name_help": "Nazwa tego urządzenia w aplikacji Zdjęcia Google, gdzie wybierasz, co pokazuje. Puste: ioBroker i nazwa hosta. Używana przy łączeniu.",
     "google_status_label": "Status",
     "google_qr": "Zeskanuj telefonem",
     "google_connect": "Połącz ze Zdjęciami Google",
     "google_choose": "Wybierz, co jest pokazywane",
     "google_disconnect": "Rozłącz",
-    "google_disconnect_confirm": "Usunąć ioBroker ze Zdjęć Google? Albumy ze Zdjęć Google pozostaną puste, dopóki nie połączysz ponownie.",
+    "google_disconnect_confirm": "Usunąć ioBroker ze Zdjęć Google? Zgoda zostanie cofnięta, a kopie zdjęć usunięte. Albumy ze Zdjęć Google pozostaną puste, dopóki nie połączysz się ponownie.",
     "google_cancel": "Anuluj",
     "google_status_disconnected": "Nie połączono.",
+    "google_status_account": "Konto Google: %s",
     "google_status_code": "Otwórz %s na telefonie lub komputerze (albo zeskanuj kod QR) i wpisz ten kod:",
     "google_status_code_until": "Kod jest ważny do %s.",
     "google_status_sources": "Połączono. Teraz wybierz w Zdjęciach Google, co pokazuje ioBroker:",
@@ -92,5 +96,6 @@
     "immich_status_error": "Błąd: %s",
     "immich_status_open": "Otwórz Immich",
     "immich_status_app": "Adres serwera dla aplikacji Immich: %s",
-    "immich_status_local_only": "Immich nasłuchuje tylko na tym hoście: aplikacja na telefonie go nie osiągnie. Wybierz 0.0.0.0 lub IP hosta."
+    "immich_status_local_only": "Immich nasłuchuje tylko na tym hoście: aplikacja na telefonie go nie osiągnie. Wybierz 0.0.0.0 lub IP hosta.",
+    "weather_source_none": "Brak"
 }

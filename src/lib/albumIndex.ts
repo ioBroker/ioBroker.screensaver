@@ -23,6 +23,8 @@ const SAVE_EVERY = 500;
 export interface IndexStore {
     load(albumId: string): Promise<Picture[] | null>;
     save(albumId: string, pictures: Picture[]): Promise<void>;
+    /** Delete the stored index of an album */
+    remove(albumId: string): Promise<void>;
 }
 
 export interface IndexLogger {
@@ -68,6 +70,8 @@ export class AlbumIndex {
     ready = false;
     /** The last scan failed: why */
     error: string | null = null;
+    /** Counted up by `forget`: a scan that started before must not bring the pictures back */
+    private generation = 0;
 
     constructor(
         public readonly config: AlbumConfig,
@@ -126,12 +130,35 @@ export class AlbumIndex {
         return this.running !== null;
     }
 
+    /**
+     * Drop what is known of the album, in memory and stored: for an album whose access was withdrawn (Google
+     * Photos). The next request reads the album again.
+     */
+    async forget(): Promise<void> {
+        this.generation++;
+        this.pictures = new Map();
+        this.ready = false;
+        this.error = null;
+        this.source.forget?.();
+        try {
+            await this.store.remove(this.config.id);
+        } catch (e) {
+            this.log.warn(
+                `Album "${this.config.id}": stored index not deleted: ${e instanceof Error ? e.message : String(e)}`,
+            );
+        }
+    }
+
     private async doScan(): Promise<void> {
         await this.load();
         const started = Date.now();
+        const generation = this.generation;
         let entries: SourceEntry[];
         try {
             entries = await this.source.list();
+            if (generation !== this.generation) {
+                return;
+            }
             this.error = null;
         } catch (e) {
             this.error = e instanceof Error ? e.message : String(e);
@@ -170,17 +197,20 @@ export class AlbumIndex {
         const worker = async (): Promise<void> => {
             for (;;) {
                 const entry = toRead.shift();
-                if (!entry) {
+                if (!entry || generation !== this.generation) {
                     return;
                 }
                 await this.readMeta(entry);
                 done++;
-                if (done % SAVE_EVERY === 0) {
+                if (done % SAVE_EVERY === 0 && generation === this.generation) {
                     await this.save();
                 }
             }
         };
         await Promise.all(Array.from({ length: PARALLEL_READS }, () => worker()));
+        if (generation !== this.generation) {
+            return;
+        }
         await this.save();
         this.log.debug(
             `Album "${this.config.id}": ${this.pictures.size} pictures, read in ${Math.round((Date.now() - started) / 100) / 10} s`,

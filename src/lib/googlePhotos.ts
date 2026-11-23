@@ -18,6 +18,8 @@ export const OAUTH_URL = 'https://oauth2.iobroker.in/googlephotos';
 
 const API_URL = 'https://photosambient.googleapis.com/v1';
 const REVOKE_URL = 'https://oauth2.googleapis.com/revoke';
+/** Name and picture of the account; the scope `profile` allows it */
+const USERINFO_URL = 'https://www.googleapis.com/oauth2/v3/userinfo';
 
 /** What the user grants: the name (for the consent screen) and the pictures of the ambient device */
 export const GOOGLE_SCOPE = 'https://www.googleapis.com/auth/photosambient.mediaitems';
@@ -35,6 +37,12 @@ export const MAX_GOOGLE_ITEMS = 500;
 
 /** A `baseUrl` is good for 60 minutes; after this it is asked for again */
 export const URL_LIFETIME_MS = 50 * 60_000;
+
+/**
+ * A copy of a picture of Google Photos is kept at most this long, then it is made anew from Google: the content of
+ * media items may be cached for 60 minutes only
+ */
+export const GOOGLE_MEDIA_MAX_AGE_MS = 60 * 60_000;
 
 /** Read the list of an album at most this often: the daily budget of the API is small */
 export const MIN_LIST_INTERVAL_MS = 3 * 60 * 60_000;
@@ -92,6 +100,43 @@ export type TokenPoll =
     | { kind: 'slowDown' }
     | { kind: 'denied' }
     | { kind: 'expired' };
+
+/** Who is connected: shown in the settings, so the user sees which Google Account it is */
+export interface GoogleProfile {
+    name?: string;
+    /** The URL of the avatar */
+    picture?: string;
+}
+
+/**
+ * The name and avatar of the account of an access token
+ *
+ * @param accessToken - with the scope `profile`
+ * @param fetchFn - fetch
+ */
+export async function readProfile(accessToken: string, fetchFn: FetchFn = fetch): Promise<GoogleProfile> {
+    let response: Response;
+    try {
+        response = await fetchFn(USERINFO_URL, {
+            headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+            signal: AbortSignal.timeout(TIMEOUT_MS),
+        });
+    } catch (e) {
+        throw new GoogleError(`Google is not reachable: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    if (!response.ok) {
+        throw new GoogleError(`The profile of the account cannot be read: ${response.status}`, response.status);
+    }
+    const body = (await response.json()) as { name?: unknown; picture?: unknown };
+    const profile: GoogleProfile = {};
+    if (typeof body.name === 'string' && body.name.trim()) {
+        profile.name = body.name.trim().substring(0, 200);
+    }
+    if (typeof body.picture === 'string' && /^https:\/\//i.test(body.picture)) {
+        profile.picture = body.picture;
+    }
+    return profile;
+}
 
 export class GoogleError extends Error {
     constructor(
@@ -372,6 +417,11 @@ export class AmbientClient {
         return (await this.request('GET', `/devices/${encodeURIComponent(id)}`)) as unknown as AmbientDevice;
     }
 
+    /** The name and avatar of the signed-in account */
+    async profile(): Promise<GoogleProfile> {
+        return readProfile(await this.session.token(), this.fetchFn);
+    }
+
     /** @param id - the device, or the request ID it was created with */
     async deleteDevice(id: string): Promise<void> {
         await this.request('DELETE', `/devices/${encodeURIComponent(id)}`);
@@ -560,7 +610,18 @@ export class GoogleSource implements PictureSource {
         this.listedAt = this.urlsAt = this.now();
     }
 
+    forget(): void {
+        this.entries = [];
+        this.urls.clear();
+        this.listedAt = this.urlsAt = 0;
+    }
+
     async list(): Promise<SourceEntry[]> {
+        if (!this.google.access()) {
+            // the access is withdrawn: what was listed for it must not be shown any more
+            this.forget();
+            this.connected();
+        }
         if (this.entries.length && this.now() - this.listedAt < MIN_LIST_INTERVAL_MS) {
             // the daily budget of the API is small: the list of a few hours ago is still good
             return this.entries;

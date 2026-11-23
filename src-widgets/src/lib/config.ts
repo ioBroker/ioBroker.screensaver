@@ -83,7 +83,10 @@ export interface FrameConfig {
     showClock: boolean;
     clockSeconds: boolean;
     clockDate: boolean;
+    /** The object IDs of the card; each one wins over the state found in `weatherSource` */
     weather: WeatherOids;
+    /** A channel of a weather adapter, like `openweathermap.0.forecast.current`: the states are found by role */
+    weatherSource: string;
 
     /** Swipe and tap to go on, go back and pause */
     interactive: boolean;
@@ -170,7 +173,11 @@ export function readEnum<T extends string>(value: unknown, allowed: readonly T[]
 }
 
 function readText(value: unknown): string {
-    return typeof value === 'string' ? value : typeof value === 'number' || typeof value === 'boolean' ? String(value) : '';
+    return typeof value === 'string'
+        ? value
+        : typeof value === 'number' || typeof value === 'boolean'
+          ? String(value)
+          : '';
 }
 
 /** The adapter that keeps the albums */
@@ -182,7 +189,9 @@ export const ADAPTER_NAME = 'screensaver';
  * @param value - what the widget carries
  */
 export function readInstance(value: unknown): string {
-    const text = readText(value).trim().replace(/^system\.adapter\./, '');
+    const text = readText(value)
+        .trim()
+        .replace(/^system\.adapter\./, '');
     if (/^\d+$/.test(text)) {
         return `${ADAPTER_NAME}.${text}`;
     }
@@ -246,6 +255,7 @@ export function readFrameConfig(data: Data | null | undefined, defaults?: { show
             humidity: cleanOid(d.weatherHumidityOid),
             precipitation: cleanOid(d.weatherPrecipOid),
         },
+        weatherSource: cleanOid(d.weatherSource),
 
         interactive: readBool(d.interactive, true),
         nextOid: cleanOid(d.nextOid),
@@ -281,7 +291,11 @@ export function readScreensaverConfig(data: Data | null | undefined): Screensave
     };
 }
 
-/** Is there a weather card to show at all? */
+/**
+ * Is there a weather card to show at all?
+ *
+ * @param weather - the object IDs of the card, those of the source included
+ */
 export function hasWeather(weather: WeatherOids): boolean {
     return !!(weather.temperature || weather.text || weather.icon);
 }

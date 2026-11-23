@@ -92,11 +92,18 @@ function keepAsItIs(name: string): boolean {
     return /\.(gif|png|svg)$/i.test(name);
 }
 
+/** The album of a copy: `cache/<album>/<file>` */
+function albumOf(path: string): string {
+    return path.split('/')[1] || '';
+}
+
 export class PictureCache {
-    /** The copies there are, by path, and when they were used */
-    private readonly files = new Map<string, { size: number; used: number }>();
+    /** The copies there are, by path: when they were made and when they were used */
+    private readonly files = new Map<string, { size: number; used: number; made: number }>();
     private total = 0;
     private readonly pending = new Map<string, Promise<string>>();
+    /** Albums whose copies may be kept only so long, by album (Google Photos) */
+    private readonly maxAges = new Map<string, number>();
 
     constructor(
         private readonly storage: CacheStorage,
@@ -115,7 +122,7 @@ export class PictureCache {
             // no cache yet
         }
         for (const file of existing) {
-            this.files.set(file.path, { size: file.size, used: file.time });
+            this.files.set(file.path, { size: file.size, used: file.time, made: file.time });
             this.total += file.size;
         }
         await this.trim();
@@ -154,9 +161,13 @@ export class PictureCache {
         const reduce = !!this.sharp && !keepAsItIs(picture.name);
         const path = cachePath(albumId, picture, edge, reduce ? 'jpg' : extensionOf(picture.name));
         const known = this.files.get(path);
-        if (known) {
+        if (known && !this.isExpired(path, known.made)) {
             known.used = this.now();
             return `${this.namespace}/${path}`;
+        }
+        if (known && !this.pending.has(path)) {
+            // too old to be kept: made anew from the source
+            await this.drop(path);
         }
         let job = this.pending.get(path);
         if (job === undefined) {
@@ -194,7 +205,11 @@ export class PictureCache {
             }
         }
         await this.storage.write(path, data);
-        this.files.set(path, { size: data.length, used: this.now() });
+        const old = this.files.get(path);
+        if (old) {
+            this.total -= old.size;
+        }
+        this.files.set(path, { size: data.length, used: this.now(), made: this.now() });
         this.total += data.length;
         await this.trim(path);
         return `${this.namespace}/${path}`;
@@ -227,18 +242,67 @@ export class PictureCache {
     }
 
     /**
+     * Copies of an album live at most this long; later they are made anew from the source and the old ones deleted.
+     * Google Photos allows media to be cached for 60 minutes only.
+     *
+     * @param albumId - the album
+     * @param ms - the time; null for as long as there is room
+     */
+    setMaxAge(albumId: string, ms: number | null): void {
+        if (ms === null) {
+            this.maxAges.delete(albumId);
+        } else {
+            this.maxAges.set(albumId, ms);
+        }
+    }
+
+    private isExpired(path: string, made: number): boolean {
+        const maxAge = this.maxAges.get(albumOf(path));
+        return maxAge !== undefined && this.now() - made >= maxAge;
+    }
+
+    private async drop(path: string): Promise<void> {
+        const file = this.files.get(path);
+        if (!file) {
+            return;
+        }
+        this.files.delete(path);
+        this.total -= file.size;
+        await this.storage.delete(path).catch(() => undefined);
+    }
+
+    /** Delete the copies that are older than their album allows: called now and then */
+    async expire(): Promise<void> {
+        for (const [path, file] of [...this.files.entries()]) {
+            if (this.isExpired(path, file.made)) {
+                await this.drop(path);
+            }
+        }
+    }
+
+    /**
+     * Delete all copies of an album: its source was disconnected
+     *
+     * @param albumId - the album
+     */
+    async forgetAlbum(albumId: string): Promise<void> {
+        for (const path of [...this.files.keys()]) {
+            if (albumOf(path) === albumId) {
+                await this.drop(path);
+            }
+        }
+    }
+
+    /**
      * Drop the copies of albums that are no longer configured
      *
      * @param albumIds - the albums there are
      */
     async forgetOthers(albumIds: string[]): Promise<void> {
         const keep = new Set(albumIds);
-        for (const [path, file] of [...this.files.entries()]) {
-            const album = path.split('/')[1];
-            if (!keep.has(album)) {
-                this.files.delete(path);
-                this.total -= file.size;
-                await this.storage.delete(path).catch(() => undefined);
+        for (const path of [...this.files.keys()]) {
+            if (!keep.has(albumOf(path))) {
+                await this.drop(path);
             }
         }
     }
