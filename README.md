@@ -44,7 +44,7 @@ The web components take React from the host: web or admin must serve the shared 
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.1.0 (2026-11-23)
 * (@GermanBluefox) First version: photo frame widget and screensaver
 * (@GermanBluefox) Photo frame and screensaver as web components too, for devices, Aura and other hosts
 * (@GermanBluefox) Renamed to `screensaver`: a backend with albums from folders of the ioBroker files, folders of the server and Immich, filtered by date and reduced to the size of the frame
