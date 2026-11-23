@@ -1,6 +1,6 @@
 {
   "name": "iobroker.screensaver",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "ioBroker photo frame and screensaver: widgets for vis-2, web components for devices, albums from folders and Immich",
   "author": "bluefox <dogafox@gmail.com>",
   "contributors": [

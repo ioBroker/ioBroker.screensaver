@@ -44,7 +44,7 @@ The web components take React from the host: web or admin must serve the shared 
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.1.1 (2026-11-23)
 * (@GermanBluefox) Releases are published to npm directly from GitHub (trusted publishing)
 
 ### 0.1.0 (2026-11-23)
